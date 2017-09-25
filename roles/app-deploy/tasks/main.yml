@@ -1,0 +1,27 @@
+---
+
+- name: unarchive app
+  unarchive:
+    src: '{{ application_url }}'
+    dest: '{{ download_dir }}'
+
+- name: install pip
+  pip:
+    name: pexpect
+
+- name: login cf cli
+  expect:
+    command: cf login -a http://api.{{ xip_ip_domain }} -u {{ cf_user_email }} --skip-ssl-validation
+    responses:
+      '(?i)API endpoint' : '{{ cf_user_password }}'
+
+- name: install app
+  shell: '{{ item }}'
+  args:
+    chdir: '{{ download_dir }}/{{ application_name }}'
+  with_items:
+    - cf orgs
+    - cf create-space {{ application_name }} -o {{ organization_name }}
+    - cf target -o "{{ organization_name }}" -s "{{ application_name }}"
+    - cf spaces
+    - cf push {{ application_name }} -b staticfile_buildpack

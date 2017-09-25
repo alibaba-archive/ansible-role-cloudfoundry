@@ -1,0 +1,191 @@
+---
+name: bosh
+
+releases:
+- name: bosh
+  url: file://((download_dir))/bosh-255.3.tgz
+- name: bosh-aliyun-cpi
+  url: file://((download_dir))/bosh-aliyun-cpi-0+dev.11.tgz
+
+resource_pools:
+- name: vms
+  network: private
+  stemcell:
+    url: file://((download_dir))/((bosh_stemcell_package))
+
+  cloud_properties:
+    image_id: m-12345
+    instance_type: ecs.n4.large
+    instance_name: micro-bosh-beijing-4
+    system_disk: {size: 50, type: cloud_efficiency}
+    ephemeral_disk: {size: 50, type: cloud_efficiency}
+
+networks:
+- name: private
+  type: manual
+  subnets:
+  - range: 172.16.0.0/12
+    gateway: 172.16.0.1
+#    dns: [((internal_ip))]
+    cloud_properties: {
+      SecurityGroupId: ((security_group_id)),
+      VSwitchId: ((subnet_id))
+    }
+- name: public
+  type: vip
+  cloud_properties: {
+    InternetMaxBandwidthOut: "10",
+    InternetChargeType: PayByTraffic
+  }
+
+jobs:
+- name: bosh
+  instances: 1
+
+  templates:
+  - {name: nats, release: bosh}
+  - {name: redis, release: bosh}
+  - {name: postgres, release: bosh}
+  - {name: blobstore, release: bosh}
+  - {name: director, release: bosh}
+  - {name: health_monitor, release: bosh}
+  - {name: registry, release: bosh}
+  - {name: aliyun_cpi, release: bosh-aliyun-cpi}
+
+  resource_pool: vms
+
+  networks:
+  - name: private
+    static_ips: [((internal_ip))]
+    default: [dns, gateway]
+  # - name: public
+  #   static_ips: [116.62.225.97] # <--- Replace with Elastic IP
+
+  properties:
+    nats: &nats
+      address: ((internal_ip))
+      user: nats
+      password: nats-password
+
+    redis:
+      listen_address: 127.0.0.1
+      address: 127.0.0.1
+      password: redis-password
+
+    postgres: &db
+      listen_address: 127.0.0.1
+      host: 127.0.0.1
+      user: postgres
+      password: postgres-password
+      database: bosh
+      adapter: postgres
+
+    registry: &registry
+      address: ((internal_ip))
+      host: ((internal_ip))
+      db: *db
+      http: {user: admin, password: admin, port: 25777}
+      username: admin
+      password: admin
+      port: 25777
+
+    blobstore: &blobstore
+      address: ((internal_ip))
+      port: 25250
+      provider: dav
+      director: {user: director, password: director-password}
+      agent: {user: agent, password: agent-password}
+
+
+    director:
+      address: 127.0.0.1
+      name: my-bosh
+      db: *db
+      cpi_job: aliyun_cpi
+      max_threads: 10
+      ssl:
+        key: ((director_ssl.private_key))
+        cert: ((director_ssl.certificate))
+      user_management:
+        provider: local
+        local:
+          users:
+          - {name: admin, password: admin}
+          - {name: hm, password: hm-password}
+
+    hm:
+      director_account: {user: hm, password: hm-password}
+      resurrector_enabled: true
+
+    aliyun: &aliyun
+      access_key_id: ((access_key_id)) # <--- Replace with Alicloud Access Key ID
+      access_key: ((secret_access_key)) # <--- Replace with Alicloud Secret Key
+      default_key_name: bosh
+      default_security_groups: [bosh]
+      region_id: ((alicloud_region))  # <--- Replace with Region
+      image_id: m-12345
+
+    agent: {mbus: "nats://nats:nats-password@((internal_ip)):4222"}
+
+    ntp: &ntp [0.pool.ntp.org, 1.pool.ntp.org]
+
+cloud_provider:
+  template: {name: aliyun_cpi, release: bosh-aliyun-cpi}
+
+#  ssh_tunnel:
+#    host: ELASTIC-IP # <--- Replace with your Elastic IP address
+#    port: 22
+#    user: vcap
+#    private_key: ./bosh.pem # Path relative to this manifest file
+
+  mbus: "https://mbus:mbus-password@((internal_ip)):6868" # <--- Replace with Elastic IP
+
+  properties:
+    aliyun: *aliyun
+    #agent: {mbus: "https://mbus:mbus-password@0.0.0.0:6868"}
+    agent:
+      mbus: "nats://nats:nats-password@((internal_ip)):4222"
+      blobstore:
+        provider: "dav"
+        options:
+          endpoint: "http://((internal_ip)):25250"
+          user: "agent"
+          password: "agent-password"
+    blobstore: {provider: local, path: /var/vcap/micro_bosh/data/cache}
+    ntp: *ntp
+    nats: *nats
+    registry: *registry
+    blobstore: *blobstore
+
+variables:
+- name: admin_password
+  type: password
+- name: blobstore_director_password
+  type: password
+- name: blobstore_agent_password
+  type: password
+- name: hm_password
+  type: password
+- name: mbus_bootstrap_password
+  type: password
+- name: nats_password
+  type: password
+- name: postgres_password
+  type: password
+- name: default_ca
+  type: certificate
+  options:
+    is_ca: true
+    common_name: ca
+- name: mbus_bootstrap_ssl
+  type: certificate
+  options:
+    ca: default_ca
+    common_name: ((internal_ip))
+    alternative_names: [((internal_ip))]
+- name: director_ssl
+  type: certificate
+  options:
+    ca: default_ca
+    common_name: ((internal_ip))
+    alternative_names: [((internal_ip))]

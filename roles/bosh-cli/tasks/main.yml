@@ -1,0 +1,36 @@
+
+---
+
+- name: download bosh alicloud cli
+  copy:
+    src: '{{ bosh_cli_url }}'
+    dest: /usr/local/bin/bosh
+    mode: 0755
+
+- name: execute bosh
+  command: bosh -v
+
+- name: upgrade apt
+  apt: upgrade=dist
+
+- name: install bosh depends on
+  apt: name={{ item }}
+  with_items:
+    - build-essential
+    - zlibc
+    - zlib1g-dev
+    - ruby
+    - ruby-dev
+    - openssl
+    - libxslt-dev
+    - libxml2-dev
+    - libssl-dev
+    - libreadline6
+    - libreadline6-dev
+    - libyaml-dev
+    - libsqlite3-dev
+    - libpq-dev
+    - libmysqlclient-dev
+    - sqlite3
+    - expect
+    - tcl

@@ -1,0 +1,57 @@
+---
+
+- name: download cf release
+  get_url:
+    url: '{{ cf_release_url }}'
+    dest: '{{ download_dir }}'
+
+- name: download cf-stemcell
+  copy:
+    src: '{{ cf_stemcell_url }}'
+    dest: '{{ download_dir }}'
+
+- name: make dir
+  file: path="{{ download_dir }}/cf-deploy" state=directory
+
+- name: copy
+  copy:
+    src: cf-deploy-{{ cf_release_version }}.yml
+    dest: '{{ download_dir }}/cf-deploy/'
+    mode: 0755
+
+- name: deploy cf prepare
+  shell: '{{ item }}'
+  args:
+    chdir: '{{ download_dir }}/cf-deploy'
+  with_items:
+    - bosh -e my-bosh vms
+    - curl -X PUT -d '{"settings":{"check"':' ""}}'  http://admin:admin@{{ internal_ip }}:25777/instances/check/settings
+    - bosh -e my-bosh us {{ download_dir }}/{{ cf_stemcell_package }}
+    - bosh -e my-bosh ur {{ download_dir }}/cf-release-{{ cf_release_version }}.tgz
+    - bosh -e my-bosh rs
+    - echo bosh -e my-bosh -d ali-cf-{{cf_release_version}} deploy cf-deploy-{{ cf_release_version }}.yml -v login_uuid={{ login_uuid.stdout }} -v internal_cidr={{ internal_cidr }} -v xip_ip_domain={{ xip_ip_domain }} -v security_group_id={{ security_group_id }} -v subnet_id={{ subnet_id }} -v stemcell_name={{ cf_stemcell_name }} -v stemcell_version={{ cf_stemcell_version }} -v cf_user_email={{ cf_user_email }} -v cf_user_password={{ cf_user_password }} -v cf_release_name={{ cf_release_name }} -v cf_release_version={{ cf_release_version }} \<\< EOF > deploy_cf.sh
+    - echo yes >> deploy_cf.sh
+    - echo EOF >> deploy_cf.sh
+    - chmod +x deploy_cf.sh
+    - ./deploy_cf.sh
+
+- name: remove useless file
+  file:
+    path: '{{ download_dir }}/bosh-init/deploy_cf.sh'
+    state: absent
+
+
+- name: copy cf-cli
+  copy:
+    src: '{{ cf_cli_url }}'
+    dest: '{{ download_dir }}'
+
+- name: install cf
+  shell: '{{ item }}'
+  args:
+    chdir: '{{ download_dir }}'
+  with_items:
+#    - curl -L "https://cli.run.pivotal.io/stable?release=linux64-binary&source=github" | tar -zx
+    - tar -xzvf cf-cli_6.30.0_linux_x86-64.tgz
+    - mv cf /usr/local/bin
+    - sudo curl -o /usr/share/bash-completion/completions/cf https://raw.githubusercontent.com/cloudfoundry/cli/master/ci/installers/completion/cf
