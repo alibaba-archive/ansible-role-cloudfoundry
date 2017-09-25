@@ -1,0 +1,9 @@
+---
+
+- name: download spiff
+  copy:
+    src: '{{ item }}'
+    dest: /usr/local/bin/spiff
+    mode: 0755
+  with_items:
+      - '{{ spiff_url }}'
