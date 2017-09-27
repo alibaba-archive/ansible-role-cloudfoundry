@@ -19,7 +19,7 @@
     dest: '{{ download_dir }}/cf-deploy/'
     mode: 0755
 
-- name: deploy cf prepare
+- name: deploy cf
   shell: '{{ item }}'
   args:
     chdir: '{{ download_dir }}/cf-deploy'
@@ -39,7 +39,6 @@
   file:
     path: '{{ download_dir }}/bosh-init/deploy_cf.sh'
     state: absent
-
 
 - name: copy cf-cli
   copy:

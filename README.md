@@ -36,9 +36,10 @@ Role Variables
 Available variables are listed below, along with default values (see group_vars/all):
 
 ### bosh variables
-This role supports bosh v255.3 and its light stemcell is v1003 which support `cn-beijing` region.
+This role supports bosh v262.3 and its light stemcell is v1003 which support `cn-beijing` region.
 
-    bosh_version: 255.3
+    bosh_version: 262.3
+
     bosh_stemcell_version: 1003
 
 ### cloudfoundry variables

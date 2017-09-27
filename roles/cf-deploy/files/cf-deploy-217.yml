@@ -25,7 +25,7 @@ resource_pools:
     name: ((stemcell_name))
     version: ((stemcell_version))
   cloud_properties:
-#    image_id: ((cf_image_id))                      # 镜像ID，必填
+    image_id: m-temp1234                      # 镜像ID，必填
     instance_type: ecs.n4.small                            # 实例类型，必填
     instance_name: test-nats                              # 实例名称，选填
     system_disk: {size: 50, type: cloud_efficiency}       # 系统盘配置，普通云盘选填，其他必填
@@ -37,7 +37,7 @@ resource_pools:
     name: ((stemcell_name))
     version: ((stemcell_version))
   cloud_properties:
-#    image_id: ((cf_image_id))
+    image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-nfs
     system_disk: {size: 50, type: cloud_efficiency}
@@ -49,7 +49,7 @@ resource_pools:
     name: ((stemcell_name))
     version: ((stemcell_version))
   cloud_properties:
-#    image_id: ((cf_image_id))
+    image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-postgres
     system_disk: {size: 50, type: cloud_efficiency}
@@ -61,7 +61,7 @@ resource_pools:
     name: ((stemcell_name))
     version: ((stemcell_version))
   cloud_properties:
-#    image_id: ((cf_image_id))
+    image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-cc
     system_disk: {size: 50, type: cloud_efficiency}
@@ -73,7 +73,7 @@ resource_pools:
     name: ((stemcell_name))
     version: ((stemcell_version))
   cloud_properties:
-#    image_id: ((cf_image_id))
+    image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-hm9000
     system_disk: {size: 50, type: cloud_efficiency}
@@ -85,7 +85,7 @@ resource_pools:
     name: ((stemcell_name))
     version: ((stemcell_version))
   cloud_properties:
-#    image_id: ((cf_image_id))
+    image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-doppler
     system_disk: {size: 50, type: cloud_efficiency}
@@ -97,7 +97,7 @@ resource_pools:
     name: ((stemcell_name))
     version: ((stemcell_version))
   cloud_properties:
-#    image_id: ((cf_image_id))
+    image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-loggregator_trafficcontroller
     system_disk: {size: 50, type: cloud_efficiency}
@@ -109,7 +109,7 @@ resource_pools:
     name: ((stemcell_name))
     version: ((stemcell_version))
   cloud_properties:
-    image_id: ((cf_image_id))
+    image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-uaa
     system_disk: {size: 50, type: cloud_efficiency}
@@ -121,7 +121,7 @@ resource_pools:
     name: ((stemcell_name))
     version: ((stemcell_version))
   cloud_properties:
-    image_id: ((cf_image_id))
+    image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-router
     system_disk: {size: 50, type: cloud_efficiency}
@@ -133,7 +133,7 @@ resource_pools:
     name: ((stemcell_name))
     version: ((stemcell_version))
   cloud_properties:
-    image_id: ((cf_image_id))
+    image_id: m-temp1234
     instance_type: ecs.n4.large
     instance_name: test-dea
     system_disk: {size: 50, type: cloud_efficiency}
@@ -144,7 +144,7 @@ compilation:
   network: private
   reuse_compilation_vms: true
   cloud_properties:
-    image_id: ((cf_image_id))
+    image_id: m-temp1234
     instance_type: ecs.n4.large
     ephemeral_disk: {size: 50, type: cloud_efficiency}
     system_disk: {size: 50, type: cloud_efficiency}
