@@ -25,6 +25,7 @@
     - bosh-deploy.yml
     - alicloud-cpi.yml
 
+
 - name: deploy bosh
   shell: '{{ item }}'
   args:
