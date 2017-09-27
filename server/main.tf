@@ -205,6 +205,7 @@ resource "alicloud_instance" "default" {
         echo internal_ip: 172.16.0.2 >> ../group_vars/all
         echo security_group_id: ${alicloud_security_group.sg.id} >> ../group_vars/all
         echo subnet_id: ${alicloud_vswitch.default.id} >> ../group_vars/all
+        echo xip_ip_domain: ${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}.xip.io >> ../group_vars/all
   EOF
   }
 }
