@@ -1,7 +1,7 @@
 director_name: my-bosh
 default_key_name: bosh-init
 
-bosh_version: 255.3
+bosh_version: 262.3
 
 cf_release_name: cf
 cf_release_version: 217

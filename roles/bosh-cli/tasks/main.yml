@@ -1,7 +1,7 @@
 
 ---
 
-- name: download bosh alicloud cli
+- name: download bosh cli
   copy:
     src: '{{ bosh_cli_url }}'
     dest: /usr/local/bin/bosh
