@@ -1,0 +1,170 @@
+---
+- type: replace
+  path: /releases/-
+  value:
+    name: bosh-aliyun-cpi
+    #version: 65
+    url: file:///root/downloads/bosh-aliyun-cpi-0+dev.11.tgz
+    #sha1: 26b3a5c43e6f82594a373309a495660d6db26254
+
+- type: replace
+  path: /resource_pools/name=vms/stemcell?
+  value:
+    url: file://((download_dir))/((bosh_stemcell_package))
+#    url: file:///root/downloads/light-bosh-stemcell-3308-google-kvm-ubuntu-trusty-go_agent.tgz
+    #sha1: 316a699d44f49d69493b1545d4addd17b78b5840
+
+# Configure Alibaba sizes
+- type: replace
+  path: /resource_pools/name=vms/cloud_properties?
+  value:
+    instance_type: ecs.n4.large
+    image_id: m-2zeggz4i4n2z510ajcvw
+    instance_name: micro-bosh-beijing-3
+    system_disk: {size: 50, type: cloud_efficiency}
+    ephemeral_disk: {size: 50, type: cloud_efficiency}
+#    availability_zone: ((az))
+
+# - type: replace
+#   path: /disk_pools/name=disks/cloud_properties?
+#   value: {type: gp2}
+
+- type: replace
+  # path: /networks/name=default/subnets/0/cloud_properties?
+  path: /networks/name=private/subnets/0/cloud_properties?
+  value:
+    VSwitchId: ((subnet_id))
+    SecurityGroupId: ((security_group_id))
+
+- type: replace
+  path: /networks/-
+  value:
+    name: public
+    type: vip
+    cloud_properties: {
+      InternetMaxBandwidthOut: "10",
+      InternetChargeType: PayByTraffic
+    }
+
+# Enable registry job
+- type: replace
+  path: /instance_groups/name=bosh/jobs/-
+  value:
+    name: registry
+    release: bosh
+
+- type: replace
+  path: /instance_groups/name=bosh/properties/registry?
+  value: &registry
+    address: ((internal_ip))
+    host: ((internal_ip))
+    db: # todo *db
+      host: 127.0.0.1
+      listen_address: 127.0.0.1
+      user: postgres
+      password: ((postgres_password))
+      database: bosh
+      adapter: postgres
+    http:
+      user: admin
+      password: admin
+      #password: ((registry_password))
+      port: 25777
+    username: admin
+    # password: ((registry_password))
+    password: admin
+    port: 25777
+
+- type: replace
+  path: /instance_groups/name=bosh/properties/ntp
+  value: &ntp
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+
+- type: replace
+  path: /instance_groups/name=bosh/properties/blobstore?
+  value: &blobstore
+    address: ((internal_ip))
+    port: 25250
+    provider: dav
+    director:
+      user: director
+      # password: ((blobstore_director_password))
+      password: director-password
+    agent:
+      user: agent
+      # password: ((blobstore_agent_password))
+      password: agent-password
+
+# Add CPI job
+- type: replace
+  path: /instance_groups/name=bosh/jobs/-
+  value: &cpi_job
+    name: aliyun_cpi
+    release: bosh-aliyun-cpi
+
+- type: replace
+  path: /instance_groups/name=bosh/properties/director/cpi_job?
+  value: aliyun_cpi
+
+- type: replace
+  path: /cloud_provider/template?
+  value: *cpi_job
+
+- type: replace
+  path: /instance_groups/name=bosh/properties/aliyun?
+  value: &cpi_conf
+    access_key_id: ((access_key_id))
+    access_key: ((secret_access_key))
+    default_key_name: ((default_key_name))
+    default_security_groups: ((security_group_id))
+    region_id: ((region))
+    image_id: m-2zeggz4i4n2z510ajcvw
+
+- type: replace
+  path: /instance_groups/name=bosh/properties/nats?
+  value: &nats
+    address: ((internal_ip))
+    user: nats
+    # password: ((nats_password))
+    password: nats-password
+
+# - type: replace
+#   path: /cloud_provider/ssh_tunnel?
+#   value:
+#     host: ((internal_ip))
+#     port: 22
+#     user: vcap
+#     private_key: ((private_key))
+
+- type: replace
+  path: /cloud_provider/properties/registry?
+  value: *registry
+
+- type: replace
+  path: /cloud_provider/properties/agent/blobstore?
+  value:
+    provider: "dav"
+    options:
+      endpoint: "http://((internal_ip)):25250"
+      user: "agent"
+      # password: ((blobstore_agent_password))
+      password: "agent-password"
+
+- type: replace
+  path: /cloud_provider/properties/blobstore?
+  value: *blobstore
+
+- type: replace
+  path: /cloud_provider/properties/nats?
+  value: *nats
+
+- type: replace
+  path: /cloud_provider/properties/aliyun?
+  value: *cpi_conf
+
+- type: replace
+  path: /variables/-
+  value:
+    name: registry_password
+    type: password

@@ -22,14 +22,15 @@
     dest: '{{ download_dir }}/bosh-init'
   with_items:
     - bosh-init.pem
-    - bosh-deploy-{{bosh_version}}.yml
+    - bosh-deploy.yml
+    - alicloud-cpi.yml
 
 - name: deploy bosh
   shell: '{{ item }}'
   args:
     chdir: '{{ download_dir }}/bosh-init'
   with_items:
-    - bosh create-env ./bosh-deploy-{{bosh_version}}.yml --state=state.json --vars-store=creds.yml -v alicloud_region={{alicloud_region}} -v download_dir={{download_dir}} -v bosh_stemcell_package={{ bosh_stemcell_package }} -v director_name={{ director_name }} -v internal_cidr={{ internal_cidr }} -v internal_gw={{ internal_gw }} -v internal_ip={{ internal_ip }} -v access_key_id={{ alicloud_access_key }} -v secret_access_key={{ alicloud_secret_key }} -v default_key_name={{ default_key_name }} -v security_group_id={{ security_group_id }} --var-file private_key=./bosh-init.pem -v subnet_id={{ subnet_id }} -v bosh_version={{bosh_version}}
+    - bosh create-env bosh-deploy.yml --state=state.json --vars-store=creds.yml -o alicloud-cpi.yml -v download_dir={{ download_dir }} -v bosh_stemcell_package={{ bosh_stemcell_package }} -v director_name={{ director_name }} -v internal_cidr={{ internal_cidr }} -v internal_gw={{ internal_gw }} -v internal_ip={{ internal_ip }} -v access_key_id={{ alicloud_access_key }} -v secret_access_key={{ alicloud_secret_key }} -v region={{alicloud_region}} -v default_key_name={{ default_key_name }} -v vnet_name=boshnet --var-file private_key=./bosh-init.pem -v subnet_id={{ subnet_id }} -v security_group_id={{ security_group_id }}
     - bosh int ./creds.yml --path /director_ssl/ca > ca-cert
     - bosh alias-env my-bosh -e {{ internal_ip }} --ca-cert ca-cert
     - bosh int ./creds.yml --path /admin_password > password
@@ -47,11 +48,11 @@
     chdir: '{{ download_dir }}/bosh-init'
   with_items:
       - echo export BOSH_CLIENT=admin >> /etc/profile
-      - echo export BOSH_CLIENT_SECRET=admin >> /etc/profile
+      - echo export BOSH_CLIENT_SECRET={{ secret_key.stdout }} >> /etc/profile
       - . /etc/profile
       - echo bosh -e my-bosh l \<\< EOF > bosh_login.sh
       - echo admin >> bosh_login.sh
-      - echo admin >> bosh_login.sh
+      - echo {{ secret_key.stdout }} >> bosh_login.sh
       - echo EOF >> bosh_login.sh
       - chmod +x bosh_login.sh
       - ./bosh_login.sh
