@@ -10,13 +10,13 @@ networks:
   type: manual
   subnets:
   - range: 172.16.0.0/12
-    gateway: 172.16.0.1
-    #dns: [172.16.0.2]
-    reserved: ["172.16.0.2"]
-    static: ["172.16.0.3 - 172.16.0.100"]
+    gateway: ((internal_gw))
+    #dns: [((internal_ip))]
+    reserved: [((internal_ip))]
+    static: ["172.16.0.10 - 172.16.0.100"]
     cloud_properties:
-      SecurityGroupId: ((security_group_id))
-      VSwitchId: ((subnet_id))
+      security_group_id: ((security_group_id))
+      vswitch_id: ((vswitch_id))
 
 resource_pools:
 - name: test-nats
@@ -28,8 +28,8 @@ resource_pools:
     image_id: m-temp1234                      # 镜像ID，必填
     instance_type: ecs.n4.small                            # 实例类型，必填
     instance_name: test-nats                              # 实例名称，选填
-    system_disk: {size: 50, type: cloud_efficiency}       # 系统盘配置，普通云盘选填，其他必填
-    ephemeral_disk: {size: 50, type: cloud_efficiency}    # bosh-agent需要的数据盘配置，必填
+    system_disk: {size: 51200, type: cloud_efficiency}       # 系统盘配置，普通云盘选填，其他必填
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}    # bosh-agent需要的数据盘配置，必填
 
 - name: test-nfs
   network: private
@@ -40,8 +40,8 @@ resource_pools:
     image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-nfs
-    system_disk: {size: 50, type: cloud_efficiency}
-    ephemeral_disk: {size: 50, type: cloud_efficiency}
+    system_disk: {size: 51200, type: cloud_efficiency}
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}
 
 - name: test-postgres
   network: private
@@ -52,8 +52,8 @@ resource_pools:
     image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-postgres
-    system_disk: {size: 50, type: cloud_efficiency}
-    ephemeral_disk: {size: 50, type: cloud_efficiency}
+    system_disk: {size: 51200, type: cloud_efficiency}
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}
 
 - name: test-cc
   network: private
@@ -64,8 +64,8 @@ resource_pools:
     image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-cc
-    system_disk: {size: 50, type: cloud_efficiency}
-    ephemeral_disk: {size: 50, type: cloud_efficiency}
+    system_disk: {size: 51200, type: cloud_efficiency}
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}
 
 - name: test-hm9000
   network: private
@@ -76,8 +76,8 @@ resource_pools:
     image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-hm9000
-    system_disk: {size: 50, type: cloud_efficiency}
-    ephemeral_disk: {size: 50, type: cloud_efficiency}
+    system_disk: {size: 51200, type: cloud_efficiency}
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}
 
 - name: test-doppler
   network: private
@@ -88,8 +88,8 @@ resource_pools:
     image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-doppler
-    system_disk: {size: 50, type: cloud_efficiency}
-    ephemeral_disk: {size: 50, type: cloud_efficiency}
+    system_disk: {size: 51200, type: cloud_efficiency}
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}
 
 - name: test-loggregator_trafficcontroller
   network: private
@@ -100,8 +100,8 @@ resource_pools:
     image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-loggregator_trafficcontroller
-    system_disk: {size: 50, type: cloud_efficiency}
-    ephemeral_disk: {size: 50, type: cloud_efficiency}
+    system_disk: {size: 51200, type: cloud_efficiency}
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}
 
 - name: test-uaa
   network: private
@@ -112,8 +112,8 @@ resource_pools:
     image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-uaa
-    system_disk: {size: 50, type: cloud_efficiency}
-    ephemeral_disk: {size: 50, type: cloud_efficiency}
+    system_disk: {size: 51200, type: cloud_efficiency}
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}
 
 - name: test-router
   network: private
@@ -124,8 +124,8 @@ resource_pools:
     image_id: m-temp1234
     instance_type: ecs.n4.small
     instance_name: test-router
-    system_disk: {size: 50, type: cloud_efficiency}
-    ephemeral_disk: {size: 50, type: cloud_efficiency}
+    system_disk: {size: 51200, type: cloud_efficiency}
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}
 
 - name: test-dea
   network: private
@@ -136,8 +136,8 @@ resource_pools:
     image_id: m-temp1234
     instance_type: ecs.n4.large
     instance_name: test-dea
-    system_disk: {size: 50, type: cloud_efficiency}
-    ephemeral_disk: {size: 50, type: cloud_efficiency}
+    system_disk: {size: 51200, type: cloud_efficiency}
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}
 
 compilation:
   workers: 1
@@ -146,8 +146,8 @@ compilation:
   cloud_properties:
     image_id: m-temp1234
     instance_type: ecs.n4.large
-    ephemeral_disk: {size: 50, type: cloud_efficiency}
-    system_disk: {size: 50, type: cloud_efficiency}
+    ephemeral_disk: {size: 51200, type: cloud_efficiency}
+    system_disk: {size: 51200, type: cloud_efficiency}
 
 update:
   canaries: 1
@@ -168,7 +168,7 @@ jobs:
 
 - name: nfs
   instances: 1
-  persistent_disk: 50
+  persistent_disk: 51200
   resource_pool: test-nfs
   templates:
   - {name: debian_nfs_server, release: cf}
@@ -178,7 +178,7 @@ jobs:
 
 - name: postgres
   instances: 1
-  persistent_disk: 50
+  persistent_disk: 51200
   resource_pool: test-postgres
   templates:
   - {name: postgres, release: cf}

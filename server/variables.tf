@@ -20,7 +20,7 @@ variable "uaa_private_ip" {
   default = "172.16.0.25"
 }
 variable "bosh_ip" {
-  default = "172.16.0.2"
+  default = "172.16.0.3"
 }
 variable "rule_policy" {
   default = "accept"
@@ -40,5 +40,5 @@ variable "ecs_password"{
   default = "Cloud12345"
 }
 variable "prefix"{
-  default = "_911"
+  default = "_for_go_cpi"
 }
