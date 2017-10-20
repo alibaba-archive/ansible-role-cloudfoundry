@@ -168,7 +168,7 @@ resource "alicloud_security_group_rule" "http-out" {
 //}
 
 resource "alicloud_key_pair" "key_pair" {
-  key_name = "key_pair_for_cloudfoundary"
+  key_name = "key_pair_for_cloudfoundary${var.prefix}-new"
   key_file = "../deploy/roles/bosh-deploy/files/bosh-init.pem"
 }
 
@@ -193,7 +193,7 @@ resource "alicloud_instance" "default" {
   //  allocate_public_ip = true
 
 
-  //  key_name = "${alicloud_key_pair.key_pair.id}"
+//    key_name = "${alicloud_key_pair.key_pair.id}"
 
   provisioner "local-exec" {
     command = <<EOF
@@ -204,9 +204,13 @@ resource "alicloud_instance" "default" {
         echo internal_gw: 172.16.0.1 >> ../group_vars/all
         echo internal_ip: ${var.bosh_ip} >> ../group_vars/all
         echo security_group_id: ${alicloud_security_group.sg.id} >> ../group_vars/all
-        echo subnet_id: ${alicloud_vswitch.default.id} >> ../group_vars/all
+        echo vswitch_id: ${alicloud_vswitch.default.id} >> ../group_vars/all
         echo xip_ip_domain: ${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}.xip.io >> ../group_vars/all
-
   EOF
   }
 }
+
+//resource "alicloud_key_pair_attachment" "default" {
+//  key_name = "${alicloud_key_pair.key_pair.id}"
+//  instance_ids = ["${alicloud_instance.default.*.id}"]
+//}

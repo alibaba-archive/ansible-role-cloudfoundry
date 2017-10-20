@@ -19,14 +19,6 @@
         chdir: ./server
       when: not delete
 
-- name: Wait 300 seconds for port 22 to become open on the host, don't start checking for 5 seconds
-  hosts: CloudFoundaryServer
-  remote_user: root
-  tasks:
-    - wait_for:
-        port: 22
-        delay: 5
-
 - name: deploy cf
   hosts: CloudFoundaryServer
   remote_user: root

@@ -27,9 +27,9 @@
     - bosh -e my-bosh vms
     - curl -X PUT -d '{"settings":{"check"':' ""}}'  http://admin:admin@{{ internal_ip }}:25777/instances/check/settings
     - bosh -e my-bosh us {{ download_dir }}/{{ cf_stemcell_package }}
-    - bosh -e my-bosh ur {{ download_dir }}/cf-release-{{ cf_release_version }}.tgz
+    - bosh -e my-bosh upload-release {{ download_dir }}/cf-release-{{ cf_release_version }}.tgz
     - bosh -e my-bosh rs
-    - echo bosh -e my-bosh -d ali-cf-{{cf_release_version}} deploy cf-deploy-{{ cf_release_version }}.yml -v login_uuid={{ login_uuid.stdout }} -v internal_cidr={{ internal_cidr }} -v xip_ip_domain={{ xip_ip_domain }} -v security_group_id={{ security_group_id }} -v subnet_id={{ subnet_id }} -v stemcell_name={{ cf_stemcell_name }} -v stemcell_version={{ cf_stemcell_version }} -v cf_user_email={{ cf_user_email }} -v cf_user_password={{ cf_user_password }} -v cf_release_name={{ cf_release_name }} -v cf_release_version={{ cf_release_version }} \<\< EOF > deploy_cf.sh
+    - echo bosh -e my-bosh -d ali-cf-{{cf_release_version}} deploy cf-deploy-{{ cf_release_version }}.yml -v login_uuid={{ login_uuid.stdout }} -v internal_cidr={{ internal_cidr }} -v internal_gw={{internal_gw}} -v internal_ip={{internal_ip}} -v xip_ip_domain={{ xip_ip_domain }} -v security_group_id={{ security_group_id }} -v vswitch_id={{ vswitch_id }} -v stemcell_name={{ cf_stemcell_name }} -v stemcell_version={{ cf_stemcell_version }} -v cf_user_email={{ cf_user_email }} -v cf_user_password={{ cf_user_password }} -v cf_release_name={{ cf_release_name }} -v cf_release_version={{ cf_release_version }} \<\< EOF > deploy_cf.sh
     - echo yes >> deploy_cf.sh
     - echo EOF >> deploy_cf.sh
     - chmod +x deploy_cf.sh
