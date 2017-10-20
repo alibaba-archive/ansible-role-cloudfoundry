@@ -33,7 +33,7 @@ Usage
 =====
 Execute the following command with Alicloud Access Key and Region ID:
 
-    $ ansible-playbook -i hosts deploy.yml --extra-vars "alicloud_access_key=XXXXXX alicloud_secret_key=XXXXXX alicloud_region=cn-beijing"
+    $ ansible-playbook -i hosts deploy.yml --extra-vars "alicloud_access_key=XXXXXX alicloud_secret_key=XXXXXX alicloud_region=cn-beijing" -c paramiko
 
 `NOTE`: If you want to delete Alicloud resources, you can set parameter `delete` to `true` in above command.
 
