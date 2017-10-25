@@ -169,7 +169,7 @@ resource "alicloud_security_group_rule" "http-out" {
 
 resource "alicloud_key_pair" "key_pair" {
   key_name = "key_pair_for_cloudfoundary${var.prefix}-new"
-  key_file = "../deploy/roles/bosh-deploy/files/bosh-init.pem"
+  key_file = "../roles/bosh-deploy/files/bosh-init.pem"
 }
 
 resource "alicloud_instance" "default" {
