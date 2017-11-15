@@ -31,11 +31,14 @@ Prepare
 
 Usage
 =====
-Execute the following command with Alicloud Access Key and Region ID:
+Execute the following command with Alicloud Access Key, Region ID and Domain Name:
 
-    $ ansible-playbook -i hosts deploy.yml --extra-vars "alicloud_access_key=XXXXXX alicloud_secret_key=XXXXXX alicloud_region=cn-beijing" -c paramiko
+    $ ansible-playbook -i hosts deploy.yml --extra-vars "alicloud_access_key=XXXXXX alicloud_secret_key=XXXXXX alicloud_region=cn-beijing system_domain=xip.io" -c paramiko
 
-`NOTE`: If you want to delete Alicloud resources, you can set parameter `delete` to `true` in above command.
+`NOTE`:
+
+    1. You must specify a system domain by 'system_domain' to access to application. System domain is a public subdomian, like `aliyun.com`
+    2. If you want to delete Alicloud resources, you can set parameter `delete` to `true` in above command.
 
 
 
