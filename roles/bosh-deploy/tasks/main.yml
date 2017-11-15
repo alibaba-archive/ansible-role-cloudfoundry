@@ -1,84 +1,55 @@
 ---
 
-- name: mkdir bosh-init
-  file: path="{{ download_dir }}/bosh-init" state=directory
+- name: create downloads
+  file: path="{{ download_dir }}" state=directory
 
-- name: download bosh
-  get_url:
-    url: '{{ bosh_url }}'
-    dest: '{{ download_dir }}'
+- name: create bosh-init
+  file: path="{{ bosh_deploy_dir }}" state=directory
 
-- name: download dependence packages and files
-  copy:
-    src: '{{ item }}'
-    dest: '{{ download_dir }}/'
-  with_items:
-      - '{{ bosh_cpi_url }}'
-      - '{{ bosh_stemcell_url }}'
-
-- name: copy pem
-  copy:
-    src: '{{ item }}'
-    dest: '{{ download_dir }}/bosh-init'
-  with_items:
-    - bosh-init.pem
-    - bosh-deploy.yml
-    - alicloud-cpi.yml
-
+- name: git clone bosh deployment
+  git:
+    repo: 'https://github.com/aliyun/bosh-deployment.git'
+    dest: '{{ bosh_deploy_dir }}/bosh-deployment'
+    version: alicloud
 
 - name: deploy bosh
   shell: '{{ item }}'
   args:
-    chdir: '{{ download_dir }}/bosh-init'
+    chdir: '{{ bosh_deploy_dir }}'
   with_items:
-    - bosh create-env bosh-deploy.yml --state=state.json --vars-store=creds.yml -o alicloud-cpi.yml -v download_dir={{ download_dir }} -v bosh_stemcell_package={{ bosh_stemcell_package }} -v director_name={{ director_name }} -v internal_cidr={{ internal_cidr }} -v internal_gw={{ internal_gw }} -v internal_ip={{ internal_ip }} -v access_key_id={{ alicloud_access_key }} -v secret_access_key={{ alicloud_secret_key }} -v region={{alicloud_region}} -v default_key_name={{ default_key_name }} -v vnet_name=boshnet --var-file private_key=./bosh-init.pem -v subnet_id={{ subnet_id }} -v security_group_id={{ security_group_id }}
+    - export BOSH_DIRECTOR_IP={{ internal_ip }}
+    - echo export BOSH_DIRECTOR_IP={{ internal_ip }} >> /etc/profile
+    - . /etc/profile
+    - bosh create-env bosh-deployment/bosh.yml --state=state.json --vars-store=creds.yml -o bosh-deployment/alicloud/cpi.yml -o bosh-deployment/jumpbox-user.yml -o bosh-deployment/misc/powerdns.yml -v dns_recursor_ip={{dns_recursor_ip}} -v download_dir={{download_dir}} -v director_name={{director_name}} -v internal_cidr={{internal_cidr}} -v internal_gw={{internal_gw}} -v internal_ip={{internal_ip}} -v vswitch_id={{vswitch_id}} -v security_group_id={{security_group_id}} -v access_key_id={{alicloud_access_key}} -v access_key_secret={{alicloud_secret_key}} -v region={{alicloud_region}} -v access_endpoint=cn-hongkong.aliyuncs.com -v zone={{bosh_zone}}
     - bosh int ./creds.yml --path /director_ssl/ca > ca-cert
     - bosh alias-env my-bosh -e {{ internal_ip }} --ca-cert ca-cert
     - bosh int ./creds.yml --path /admin_password > password
+    - bosh int ./creds.yml --path /jumpbox_ssh/private_key > jumpbox.key
+    - chmod 600 jumpbox.key
 
 - name: get password
   command: awk 'NR==1{print}' password
   args:
-    chdir: '{{ download_dir }}/bosh-init'
+    chdir: '{{ bosh_deploy_dir }}'
   register: secret_key
 
 
 - name: set secret key and login
   shell: '{{ item }}'
   args:
-    chdir: '{{ download_dir }}/bosh-init'
+    chdir: '{{ bosh_deploy_dir }}'
   with_items:
+      - echo export BOSH_LOG_LEVEL=info >> /etc/profile
+      - echo export BOSH_LOG_PATH=$(pwd)/bosh.log >> /etc/profile
+      - echo export BOSH_ENVIRONMENT={{internal_ip}}
+      - echo export BOSH_CA_CERT=$(pwd)/ca-cert >> /etc/profile
       - echo export BOSH_CLIENT=admin >> /etc/profile
       - echo export BOSH_CLIENT_SECRET={{ secret_key.stdout }} >> /etc/profile
       - . /etc/profile
-      - echo bosh -e my-bosh l \<\< EOF > bosh_login.sh
+      - echo bosh -e {{director_name}} l \<\< EOF > bosh_login.sh
       - echo admin >> bosh_login.sh
       - echo {{ secret_key.stdout }} >> bosh_login.sh
       - echo EOF >> bosh_login.sh
       - chmod +x bosh_login.sh
       - ./bosh_login.sh
       - bosh -e my-bosh vms
-
-- name: check login status and output login info
-  shell: '{{ item }}'
-  args:
-    chdir: '{{ download_dir }}/bosh-init'
-  with_items:
-      - bosh -e my-bosh vms
-      - bosh -e my-bosh env > login
-
-- name: get uuid
-  command: awk 'NR==2{print}' login
-  args:
-    chdir: '{{ download_dir }}/bosh-init'
-  register: login_uuid
-
-- name: remove useless file
-  file:
-    path: '{{ download_dir }}/bosh-init/{{ item }}'
-    state: absent
-  with_items:
-    - ca-cert
-    - password
-    - login
-    - bosh_login.sh
