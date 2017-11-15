@@ -8,11 +8,25 @@ variable "alicloud_region" {
 }
 
 variable "vpc_cidr" {
+  default = "172.16.0.0/12"
+}
+variable "vswitch_cidr_bosh" {
   default = "172.16.0.0/24"
 }
-variable "vswitch_cidr" {
-  default = "172.16.0.0/24"
+variable "bosh_gateway" {
+  default = "172.16.0.253"
 }
+
+variable "vswitch_cidr_cf" {
+  type = "list"
+  default = ["172.16.10.0/24", "172.16.11.0/24", "172.16.12.0/24"]
+}
+
+variable "cf_gateway" {
+  type = "list"
+  default = ["172.16.10.253", "172.16.11.253", "172.16.12.253"]
+}
+
 variable "router_private_ip" {
   default = "172.16.0.27"
 }
@@ -20,7 +34,7 @@ variable "uaa_private_ip" {
   default = "172.16.0.25"
 }
 variable "bosh_ip" {
-  default = "172.16.0.2"
+  default = "172.16.0.3"
 }
 variable "rule_policy" {
   default = "accept"
@@ -40,5 +54,8 @@ variable "ecs_password"{
   default = "Cloud12345"
 }
 variable "prefix"{
-  default = "_911"
+  default = "_v10_1010"
+}
+variable "domain_name" {
+  description = "The domain name used to access to your application, like aliyun.com"
 }
