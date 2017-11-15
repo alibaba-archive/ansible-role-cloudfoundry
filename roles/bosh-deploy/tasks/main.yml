@@ -20,7 +20,7 @@
     - export BOSH_DIRECTOR_IP={{ internal_ip }}
     - echo export BOSH_DIRECTOR_IP={{ internal_ip }} >> /etc/profile
     - . /etc/profile
-    - bosh create-env bosh-deployment/bosh.yml --state=state.json --vars-store=creds.yml -o bosh-deployment/alicloud/cpi.yml -o bosh-deployment/jumpbox-user.yml -o bosh-deployment/misc/powerdns.yml -v dns_recursor_ip={{dns_recursor_ip}} -v download_dir={{download_dir}} -v director_name={{director_name}} -v internal_cidr={{internal_cidr}} -v internal_gw={{internal_gw}} -v internal_ip={{internal_ip}} -v vswitch_id={{vswitch_id}} -v security_group_id={{security_group_id}} -v access_key_id={{alicloud_access_key}} -v access_key_secret={{alicloud_secret_key}} -v region={{alicloud_region}} -v access_endpoint=cn-hongkong.aliyuncs.com -v zone={{bosh_zone}}
+    - bosh create-env bosh-deployment/bosh.yml --state=state.json --vars-store=creds.yml -o bosh-deployment/alicloud/cpi.yml -o bosh-deployment/jumpbox-user.yml -o bosh-deployment/misc/powerdns.yml -v dns_recursor_ip={{dns_recursor_ip}} -v download_dir={{download_dir}} -v director_name={{director_name}} -v internal_cidr={{internal_cidr}} -v internal_gw={{internal_gw}} -v internal_ip={{internal_ip}} -v vswitch_id={{vswitch_id}} -v security_group_id={{security_group_id}} -v access_key_id={{alicloud_access_key}} -v access_key_secret={{alicloud_secret_key}} -v region={{alicloud_region}} -v access_endpoint={{alicloud_region}}.aliyuncs.com -v zone={{bosh_zone}}
     - bosh int ./creds.yml --path /director_ssl/ca > ca-cert
     - bosh alias-env my-bosh -e {{ internal_ip }} --ca-cert ca-cert
     - bosh int ./creds.yml --path /admin_password > password
