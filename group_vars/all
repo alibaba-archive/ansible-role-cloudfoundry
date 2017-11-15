@@ -1,40 +1,21 @@
 director_name: my-bosh
 
-default_key_name: bosh-init
-
 bosh_version: 263.2.0
 
-cf_release_name: cf
-cf_release_version: 217
-# cf 217 sha1
-cf_release_sha1: 6b41a35cf3f362f644ab0ce552d578dfd682e9a1
-cf_user_email: cps@aliyun.com
-cf_user_password: Cps123456
+cf_release_version: 278
 
 delete: false
 download_dir: /root/downloads
+bosh_deploy_dir: /root/bosh-deploy-{{bosh_version}}
+cf_deploy_dir: /root/cf-release-{{cf_release_version}}
+dns_recursor_ip: 8.8.8.8
 
 dependence_package_dir: ./dependence
 
-bosh_stemcell_version: 1003
-bosh_stemcell_package: light-bosh-stemcell-{{bosh_stemcell_version}}-alicloud-kvm-ubuntu-trusty-go_agent.tgz
-bosh_stemcell_url: '{{ dependence_package_dir }}/{{bosh_stemcell_package}}'
-bosh_url: 'https://bosh.io/d/github.com/cloudfoundry/bosh?v={{bosh_version}}'
-bosh_cpi_url: '{{ dependence_package_dir }}/bosh-alicloud-cpi.tgz'
-bosh_cli_url: '{{ dependence_package_dir }}/bosh-cli-2.0.28-linux-amd64'
-
-cf_stemcell_version: 1003
-cf_stemcell_name: cf-alicloud-kvm-hubuntu-trusty-go_agent
-cf_stemcell_package: light-cf-stemcell-{{cf_stemcell_version}}-alicloud-kvm-ubuntu-trusty-go_agent.tgz
-cf_release_url: https://bosh.io/d/github.com/cloudfoundry/cf-release?v={{cf_release_version}}
-cf_stemcell_url: '{{ dependence_package_dir }}/{{cf_stemcell_package}}'
-cf_cli_url: '{{ dependence_package_dir }}/cf-cli_6.30.0_linux_x86-64.tgz'
-
-spiff_url: '{{ dependence_package_dir }}/spiff'
+stemcell_version: 1010
+stemcell_sha1: 00d20db2c7cb63d8e75f4c021d5014db57ee26fe
 
 application_package: helloworld.tgz
 application_url: '{{ dependence_package_dir }}/{{ application_package }}'
 application_name: helloworld
 organization_name: default_organization
-
-

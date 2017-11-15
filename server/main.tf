@@ -17,56 +17,51 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_zones" "default" {
-  "available_instance_type"= "${data.alicloud_instance_types.1c2g.instance_types.1.id}"
+  "available_instance_type"= "${data.alicloud_instance_types.1c2g.instance_types.0.id}"
   "available_disk_category"= "${var.disk_category}"
 }
 
 resource "alicloud_vpc" "default" {
-  name = "bosh_init_vpc${var.prefix}"
+  name = "for_cf${var.prefix}"
   cidr_block = "${var.vpc_cidr}"
 }
 
-resource "alicloud_vswitch" "default" {
+resource "alicloud_vswitch" "bosh" {
+  name = "for_bosh${var.prefix}"
   vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "${var.vswitch_cidr}"
+  cidr_block = "${var.vswitch_cidr_bosh}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+resource "alicloud_vswitch" "cf" {
+  count = "${length(var.vswitch_cidr_cf)}"
+  name = "vswitch_for_cf${var.prefix}-${count.index}"
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "${element(var.vswitch_cidr_cf, count.index)}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 
 resource "alicloud_nat_gateway" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   spec = "Small"
-  name = "bosh_init_nat${var.prefix}"
+  name = "for_bosh${var.prefix}"
   bandwidth_packages = [{
     ip_count = 2
-    bandwidth = 100
+    bandwidth = 10
     zone = "${data.alicloud_zones.default.zones.0.id}"
   }]
   depends_on = [
-    "alicloud_vswitch.default"]
+    "alicloud_vswitch.bosh"]
 }
-resource "alicloud_snat_entry" "default"{
+resource "alicloud_snat_entry" "bosh"{
   snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
-  source_vswitch_id = "${alicloud_vswitch.default.id}"
+  source_vswitch_id = "${alicloud_vswitch.bosh.id}"
   snat_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),0)}"
 }
-
-resource "alicloud_forward_entry" "default"{
-  forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-  external_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}"
-  external_port = "80"
-  ip_protocol = "tcp"
-  internal_ip = "${var.router_private_ip}"
-//  internal_ip = "${alicloud_instance.default.private_ip}"
-  internal_port = "80"
-}
-
-resource "alicloud_forward_entry" "443"{
-  forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-  external_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}"
-  external_port = "443"
-  ip_protocol = "tcp"
-  internal_ip = "${var.uaa_private_ip}"
-  internal_port = "8443"
+resource "alicloud_snat_entry" "cf"{
+  count = "${length(var.vswitch_cidr_cf)}"
+  snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
+  source_vswitch_id = "${element(alicloud_vswitch.cf.*.id, count.index)}"
+  snat_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),0)}"
 }
 
 resource "alicloud_forward_entry" "ssh"{
@@ -76,24 +71,6 @@ resource "alicloud_forward_entry" "ssh"{
   ip_protocol = "tcp"
   internal_ip = "${alicloud_instance.default.private_ip}"
   internal_port = "22"
-}
-
-resource "alicloud_forward_entry" "bosh_target"{
-  forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-  external_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}"
-  external_port = "25555"
-  ip_protocol = "tcp"
-  internal_ip = "${var.bosh_ip}"
-  internal_port = "25555"
-}
-
-resource "alicloud_forward_entry" "bosh_target_6868"{
-  forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-  external_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}"
-  external_port = "6868"
-  ip_protocol = "tcp"
-  internal_ip = "${var.bosh_ip}"
-  internal_port = "6868"
 }
 
 resource "alicloud_security_group" "sg" {
@@ -112,16 +89,7 @@ resource "alicloud_security_group_rule" "all-in" {
   security_group_id = "${alicloud_security_group.sg.id}"
   cidr_ip = "0.0.0.0/0"
 }
-//resource "alicloud_security_group_rule" "http-in" {
-//  type = "ingress"
-//  ip_protocol = "tcp"
-//  nic_type = "intranet"
-//  policy = "accept"
-//  port_range = "80/80"
-//  priority = 1
-//  security_group_id = "${alicloud_security_group.sg.id}"
-//  cidr_ip = "0.0.0.0/0"
-//}
+
 resource "alicloud_security_group_rule" "http-out" {
   type = "egress"
   ip_protocol = "all"
@@ -132,85 +100,91 @@ resource "alicloud_security_group_rule" "http-out" {
   security_group_id = "${alicloud_security_group.sg.id}"
   cidr_ip = "0.0.0.0/0"
 }
-//
-//
-//resource "alicloud_security_group_rule" "ssh" {
-//  type = "ingress"
-//  ip_protocol = "tcp"
-//  nic_type = "intranet"
-//  policy = "accept"
-//  port_range = "22/22"
-//  priority = 1
-//  security_group_id = "${alicloud_security_group.sg.id}"
-//  cidr_ip = "0.0.0.0/0"
-//}
-//
-//resource "alicloud_security_group_rule" "boshtarget" {
-//  type = "ingress"
-//  ip_protocol = "tcp"
-//  nic_type = "intranet"
-//  policy = "accept"
-//  port_range = "25555/25555"
-//  priority = 1
-//  security_group_id = "${alicloud_security_group.sg.id}"
-//  cidr_ip = "0.0.0.0/0"
-//}
 
-//resource "alicloud_security_group_rule" "boshagent" {
-//  type = "ingress"
-//  ip_protocol = "tcp"
-//  nic_type = "intranet"
-//  policy = "accept"
-//  port_range = "6868/6868"
-//  priority = 1
-//  security_group_id = "${alicloud_security_group.sg.id}"
-//  cidr_ip = "0.0.0.0/0"
-//}
+resource "alicloud_slb" "http" {
+  name = "for_cf${var.prefix}"
+  vswitch_id = "${alicloud_vswitch.cf.0.id}"
+  internet_charge_type = "paybytraffic"
+  listener = [
+    {
+      "instance_port" = "80"
+      "lb_port" = "80"
+      "lb_protocol" = "http"
+      "bandwidth" = "5"
+    },
+    {
+      "instance_port" = "8443"
+      "lb_port" = "443"
+      "lb_protocol" = "http"
+      "bandwidth" = "5"
+    }]
+}
 
-resource "alicloud_key_pair" "key_pair" {
-  key_name = "key_pair_for_cloudfoundary${var.prefix}-new"
-  key_file = "../deploy/roles/bosh-deploy/files/bosh-init.pem"
+resource "alicloud_slb" "tcp" {
+  name = "for_cf${var.prefix}"
+  vswitch_id = "${alicloud_vswitch.cf.0.id}"
+  internet_charge_type = "paybytraffic"
+  listener = [
+    {
+      "instance_port" = "80"
+      "lb_port" = "80"
+      "lb_protocol" = "http"
+      "bandwidth" = "5"
+    },
+    {
+      "instance_port" = "8443"
+      "lb_port" = "443"
+      "lb_protocol" = "http"
+      "bandwidth" = "5"
+    }]
 }
 
 resource "alicloud_instance" "default" {
-//  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   security_groups = [
     "${alicloud_security_group.sg.id}"]
 
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  vswitch_id = "${alicloud_vswitch.bosh.id}"
 
   password = "${var.ecs_password}"
 
   # series III
   instance_charge_type = "PostPaid"
-  instance_type = "${data.alicloud_instance_types.1c2g.instance_types.1.id}"
+  instance_type = "${data.alicloud_instance_types.1c2g.instance_types.0.id}"
   internet_max_bandwidth_out = 0
 
   system_disk_category = "cloud_efficiency"
   system_disk_size = 100
   image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_name = "bosh_init${var.prefix}"
-  //  allocate_public_ip = true
+  instance_name = "for_bosh_director${var.prefix}"
 
-
-//    key_name = "${alicloud_key_pair.key_pair.id}"
 
   provisioner "local-exec" {
     command = <<EOF
         echo [CloudFoundaryServer] > ../hosts
         echo ${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)} ansible_user=root ansible_ssh_pass=${var.ecs_password} >> ../hosts
         echo \n
-        echo internal_cidr: ${var.vpc_cidr} >> ../group_vars/all
-        echo internal_gw: 172.16.0.1 >> ../group_vars/all
+        echo internal_cidr: ${var.vswitch_cidr_bosh} >> ../group_vars/all
+        echo internal_gw: ${var.bosh_gateway} >> ../group_vars/all
         echo internal_ip: ${var.bosh_ip} >> ../group_vars/all
         echo security_group_id: ${alicloud_security_group.sg.id} >> ../group_vars/all
-        echo vswitch_id: ${alicloud_vswitch.default.id} >> ../group_vars/all
-        echo xip_ip_domain: ${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}.xip.io >> ../group_vars/all
+        echo vswitch_id: ${alicloud_vswitch.bosh.id} >> ../group_vars/all
+        echo bosh_zone: ${alicloud_vswitch.bosh.availability_zone} >> ../group_vars/all
+        echo system_domain: ${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}.${var.domain_name} >> ../group_vars/all
+        echo "########deployment cf variables########" >> ../group_vars/all
+        echo zone_1: ${alicloud_vswitch.cf.0.availability_zone} >> ../group_vars/all
+        echo vswitch_id_1: ${alicloud_vswitch.cf.0.id} >> ../group_vars/all
+        echo vswitch_range_1: ${alicloud_vswitch.cf.0.cidr_block} >> ../group_vars/all
+        echo vswitch_gateway_1: ${element(var.cf_gateway, 0)} >> ../group_vars/all
+        echo zone_2: ${alicloud_vswitch.cf.1.availability_zone} >> ../group_vars/all
+        echo vswitch_id_2: ${alicloud_vswitch.cf.1.id} >> ../group_vars/all
+        echo vswitch_range_2: ${alicloud_vswitch.cf.1.cidr_block} >> ../group_vars/all
+        echo vswitch_gateway_2: ${element(var.cf_gateway, 1)} >> ../group_vars/all
+        echo zone_3: ${alicloud_vswitch.cf.2.availability_zone} >> ../group_vars/all
+        echo vswitch_id_3: ${alicloud_vswitch.cf.2.id} >> ../group_vars/all
+        echo vswitch_range_3: ${alicloud_vswitch.cf.2.cidr_block} >> ../group_vars/all
+        echo vswitch_gateway_3: ${element(var.cf_gateway, 2)} >> ../group_vars/all
+        echo tcp_slb_id: ${alicloud_slb.tcp.id} >> ../group_vars/all
+        echo http_slb_id: ${alicloud_slb.http.id} >> ../group_vars/all
   EOF
   }
 }
-
-//resource "alicloud_key_pair_attachment" "default" {
-//  key_name = "${alicloud_key_pair.key_pair.id}"
-//  instance_ids = ["${alicloud_instance.default.*.id}"]
-//}
