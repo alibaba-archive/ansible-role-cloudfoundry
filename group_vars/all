@@ -19,3 +19,4 @@ application_package: helloworld.tgz
 application_url: '{{ dependence_package_dir }}/{{ application_package }}'
 application_name: helloworld
 organization_name: default_organization
+
