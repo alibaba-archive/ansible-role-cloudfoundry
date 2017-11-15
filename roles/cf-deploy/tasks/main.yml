@@ -1,56 +1,66 @@
 ---
 
-- name: download cf release
-  get_url:
-    url: '{{ cf_release_url }}'
-    dest: '{{ download_dir }}'
-
-- name: download cf-stemcell
-  copy:
-    src: '{{ cf_stemcell_url }}'
-    dest: '{{ download_dir }}'
-
 - name: make dir
-  file: path="{{ download_dir }}/cf-deploy" state=directory
+  file: path="{{ cf_deploy_dir }}" state=directory
 
-- name: copy
+- name: copy cloud-config
   copy:
-    src: cf-deploy-{{ cf_release_version }}.yml
-    dest: '{{ download_dir }}/cf-deploy/'
-    mode: 0755
+    src: cloud-config.yml
+    dest: '{{ cf_deploy_dir }}'
+
+- name: copy convert
+  copy:
+    src: convert.sh
+    dest: '{{ cf_deploy_dir }}'
+    mode: 0777
+
+- name: update config
+  shell: '{{ item }}'
+  args:
+    chdir: '{{ cf_deploy_dir }}'
+  with_items:
+    - echo bosh -e my-bosh update-cloud-config ./cloud-config.yml -v zone-1={{zone_1}} -v zone-2={{zone_2}} -v zone-3={{zone_3}} -v subnet-1-id={{vswitch_id_1}} -v subnet-2-id={{vswitch_id_2}} -v subnet-3-id={{vswitch_id_3}} -v subnet-1-range={{vswitch_range_1}}  -v subnet-2-range={{vswitch_range_2}} -v subnet-3-range={{vswitch_range_3}} -v subnet-1-gateway={{vswitch_gateway_1}} -v subnet-2-gateway={{vswitch_gateway_2}} -v subnet-3-gateway={{vswitch_gateway_3}} -v security-group-id={{security_group_id}} -v tcp-slb-id={{tcp_slb_id}} -v http-slb-id={{http_slb_id}} \<\< EOF > update_config.sh
+    - echo y >> update_config.sh
+    - echo EOF >> update_config.sh
+    - chmod +x update_config.sh
+    - ./update_config.sh
+  args:
+    chdir: '{{ cf_deploy_dir }}'
+
+- name: git clone cf deployment
+  git:
+    repo: 'https://github.com/aliyun/cf-deployment.git'
+    dest: '{{ cf_deploy_dir }}/cf-deployment'
 
 - name: deploy cf
   shell: '{{ item }}'
   args:
-    chdir: '{{ download_dir }}/cf-deploy'
+    chdir: '{{cf_deploy_dir}}'
   with_items:
     - bosh -e my-bosh vms
-    - curl -X PUT -d '{"settings":{"check"':' ""}}'  http://admin:admin@{{ internal_ip }}:25777/instances/check/settings
-    - bosh -e my-bosh us {{ download_dir }}/{{ cf_stemcell_package }}
-    - bosh -e my-bosh ur {{ download_dir }}/cf-release-{{ cf_release_version }}.tgz
-    - bosh -e my-bosh rs
-    - echo bosh -e my-bosh -d ali-cf-{{cf_release_version}} deploy cf-deploy-{{ cf_release_version }}.yml -v login_uuid={{ login_uuid.stdout }} -v internal_cidr={{ internal_cidr }} -v xip_ip_domain={{ xip_ip_domain }} -v security_group_id={{ security_group_id }} -v subnet_id={{ subnet_id }} -v stemcell_name={{ cf_stemcell_name }} -v stemcell_version={{ cf_stemcell_version }} -v cf_user_email={{ cf_user_email }} -v cf_user_password={{ cf_user_password }} -v cf_release_name={{ cf_release_name }} -v cf_release_version={{ cf_release_version }} \<\< EOF > deploy_cf.sh
+    - bosh -e my-bosh upload-stemcell http://bosh-alicloud.oss-cn-hangzhou.aliyuncs.com/light-bosh-stemcell-{{stemcell_version}}-alicloud-kvm-ubuntu-trusty-go_agent.tgz
+    - bosh -e my-bosh upload-release upload-release https://bosh.io/d/github.com/cloudfoundry/cf-release?v=279
+    - export CF_DOMAIN={{system_domain}}
+    - echo export CF_DOMAIN={{system_domain}} >> /etc/profile
+    - . /etc/profile
+    - ./convert.sh {{cf_release_version}} {{stemcell_version}} cf-deployment/cf-deployment.yml
+    - echo bosh -e my-bosh -d cf deploy cf-deployment-{{cf_release_version}}.yml --vars-store cf-vars.yml -v system_domain={{system_domain}} \<\< EOF > deploy_cf.sh
     - echo yes >> deploy_cf.sh
     - echo EOF >> deploy_cf.sh
     - chmod +x deploy_cf.sh
     - ./deploy_cf.sh
 
-- name: remove useless file
-  file:
-    path: '{{ download_dir }}/bosh-init/deploy_cf.sh'
-    state: absent
 
-- name: copy cf-cli
-  copy:
-    src: '{{ cf_cli_url }}'
+- name: download cf cli and unarchive
+  unarchive:
+    src: 'https://cli.run.pivotal.io/stable?release=linux64-binary&source=github'
     dest: '{{ download_dir }}'
+    remote_src: yes
 
-- name: install cf
+- name: install cf cli
   shell: '{{ item }}'
   args:
     chdir: '{{ download_dir }}'
   with_items:
-#    - curl -L "https://cli.run.pivotal.io/stable?release=linux64-binary&source=github" | tar -zx
-    - tar -xzvf cf-cli_6.30.0_linux_x86-64.tgz
     - mv cf /usr/local/bin
     - sudo curl -o /usr/share/bash-completion/completions/cf https://raw.githubusercontent.com/cloudfoundry/cli/master/ci/installers/completion/cf
