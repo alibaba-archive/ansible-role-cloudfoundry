@@ -39,7 +39,7 @@
   with_items:
     - bosh -e my-bosh vms
     - bosh -e my-bosh upload-stemcell http://bosh-alicloud.oss-cn-hangzhou.aliyuncs.com/light-bosh-stemcell-{{stemcell_version}}-alicloud-kvm-ubuntu-trusty-go_agent.tgz
-    - bosh -e my-bosh upload-release upload-release https://bosh.io/d/github.com/cloudfoundry/cf-release?v=279
+    - bosh -e my-bosh upload-release https://bosh.io/d/github.com/cloudfoundry/cf-release?v={{ cf_release_version }}
     - export CF_DOMAIN={{system_domain}}
     - echo export CF_DOMAIN={{system_domain}} >> /etc/profile
     - . /etc/profile

@@ -8,7 +8,7 @@
         chdir: ./server
 
     - expect:
-        command: terraform destroy -var 'alicloud_access_key={{ alicloud_access_key }}' -var 'alicloud_secret_key={{ alicloud_secret_key }}' -var 'alicloud_region={{ alicloud_region }} -var 'domain_name={{ system_domain }}'
+        command: terraform destroy -var 'alicloud_access_key={{ alicloud_access_key }}' -var 'alicloud_secret_key={{ alicloud_secret_key }}' -var 'alicloud_region={{ alicloud_region }}' -var 'domain_name={{ system_domain }}'
         responses:
           'Enter a value:' : 'yes'
         chdir: ./server
