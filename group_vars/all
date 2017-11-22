@@ -10,13 +10,9 @@ bosh_deploy_dir: /root/bosh-deploy-{{bosh_version}}
 cf_deploy_dir: /root/cf-release-{{cf_release_version}}
 dns_recursor_ip: 8.8.8.8
 
-dependence_package_dir: ./dependence
-
 stemcell_version: 1010
-stemcell_sha1: 00d20db2c7cb63d8e75f4c021d5014db57ee26fe
 
 application_package: helloworld.tgz
-application_url: '{{ dependence_package_dir }}/{{ application_package }}'
 application_name: helloworld
-organization_name: default_organization
+organization_name: system
 

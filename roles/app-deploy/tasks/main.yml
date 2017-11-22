@@ -1,21 +1,16 @@
 ---
 
-- name: unarchive app
+- name: copy application
   unarchive:
-    src: '{{ application_url }}'
+    src: '{{ application_package }}'
     dest: '{{ download_dir }}'
 
-- name: install pip
-  pip:
-    name: pexpect
-
-
-- name: deploy bosh
+- name: create password
   shell: bosh int ./cf-vars.yml --path /cf_admin_password > password
   args:
     chdir: '{{ cf_deploy_dir }}'
 
-- name: get password
+- name: register password
   command: awk 'NR==1{print}' password
   args:
     chdir: '{{ cf_deploy_dir }}'
@@ -25,18 +20,6 @@
   command: cf login -a http://api.{{system_domain}} --skip-ssl-validation -u admin -p {{secret_key.stdout}}
   args:
       chdir: '{{ cf_deploy_dir }}'
-
-#    command: cf login -a http://api.{{ system_domain }} -u {{ cf_user_email }} --skip-ssl-validation
-#    command: cf login -a http://api.$CF_DOMAIN --skip-ssl-validation -u admin -p `bosh int ./cf-vars.yml --path /cf_admin_password`
-#    responses:
-#      '(?i)API endpoint' : '{{ cf_user_password }}'
-
-#- name: login cf cli
-#  expect:
-##    command: cf login -a http://api.{{ system_domain }} -u {{ cf_user_email }} --skip-ssl-validation
-#    command: cf login -a http://api.$CF_DOMAIN --skip-ssl-validation -u admin -p `bosh int ./cf-vars.yml --path /cf_admin_password`
-#    responses:
-#      '(?i)API endpoint' : '{{ cf_user_password }}'
 
 - name: install app
   shell: '{{ item }}'
