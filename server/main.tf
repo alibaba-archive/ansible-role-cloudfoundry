@@ -39,7 +39,7 @@ resource "alicloud_vswitch" "cf" {
   cidr_block = "${element(var.vswitch_cidr_cf, count.index)}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
-
+//
 resource "alicloud_nat_gateway" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   spec = "Small"
@@ -102,40 +102,42 @@ resource "alicloud_security_group_rule" "http-out" {
 }
 
 resource "alicloud_slb" "http" {
-  name = "for_cf${var.prefix}"
+  name = "http_for_cf${var.prefix}"
   vswitch_id = "${alicloud_vswitch.cf.0.id}"
   internet_charge_type = "paybytraffic"
+//  internet=true
   listener = [
     {
       "instance_port" = "80"
       "lb_port" = "80"
       "lb_protocol" = "http"
-      "bandwidth" = "5"
+      "bandwidth" = "10"
     },
     {
-      "instance_port" = "8443"
+      "instance_port" = "443"
       "lb_port" = "443"
-      "lb_protocol" = "http"
-      "bandwidth" = "5"
+      "lb_protocol" = "tcp"
+      "bandwidth" = "10"
     }]
 }
 
 resource "alicloud_slb" "tcp" {
-  name = "for_cf${var.prefix}"
+  name = "tcp_for_cf${var.prefix}"
   vswitch_id = "${alicloud_vswitch.cf.0.id}"
+//  internet=true
   internet_charge_type = "paybytraffic"
   listener = [
     {
       "instance_port" = "80"
       "lb_port" = "80"
-      "lb_protocol" = "http"
-      "bandwidth" = "5"
+      "lb_protocol" = "tcp"
+      "bandwidth" = "10"
     },
     {
-      "instance_port" = "8443"
+      "instance_port" = "443"
       "lb_port" = "443"
-      "lb_protocol" = "http"
-      "bandwidth" = "5"
+      "lb_protocol" = "tcp"
+      "bandwidth" = "10"
     }]
 }
 
@@ -169,7 +171,7 @@ resource "alicloud_instance" "default" {
         echo security_group_id: ${alicloud_security_group.sg.id} >> ../group_vars/all
         echo vswitch_id: ${alicloud_vswitch.bosh.id} >> ../group_vars/all
         echo bosh_zone: ${alicloud_vswitch.bosh.availability_zone} >> ../group_vars/all
-        echo system_domain: ${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}.${var.domain_name} >> ../group_vars/all
+        echo system_domain: ${alicloud_eip.default.ip_address}.${var.domain_name} >> ../group_vars/all
         echo "########deployment cf variables########" >> ../group_vars/all
         echo zone_1: ${alicloud_vswitch.cf.0.availability_zone} >> ../group_vars/all
         echo vswitch_id_1: ${alicloud_vswitch.cf.0.id} >> ../group_vars/all
@@ -188,3 +190,23 @@ resource "alicloud_instance" "default" {
   EOF
   }
 }
+
+
+resource "alicloud_eip" "default" {
+  bandwidth=10
+}
+
+//resource "alicloud_eip_association" "default" {
+//  instance_id="${alicloud_instance.default.id}"
+//  allocation_id="${alicloud_eip.default.0.id}"
+//}
+
+//resource "alicloud_eip_association" "http" {
+//  instance_id="${alicloud_slb.http.id}"
+//  allocation_id="${alicloud_eip.default.0.id}"
+//}
+//
+//resource "alicloud_eip_association" "tcp" {
+//  instance_id="${alicloud_slb.tcp.id}"
+//  allocation_id="${alicloud_eip.default.1.id}"
+//}

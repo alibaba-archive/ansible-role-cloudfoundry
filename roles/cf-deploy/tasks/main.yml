@@ -24,8 +24,6 @@
     - echo EOF >> update_config.sh
     - chmod +x update_config.sh
     - ./update_config.sh
-  args:
-    chdir: '{{ cf_deploy_dir }}'
 
 - name: git clone cf deployment
   git:
@@ -44,7 +42,7 @@
     - echo export CF_DOMAIN={{system_domain}} >> /etc/profile
     - . /etc/profile
     - ./convert.sh {{cf_release_version}} {{stemcell_version}} cf-deployment/cf-deployment.yml
-    - echo bosh -e my-bosh -d cf deploy cf-deployment-{{cf_release_version}}.yml --vars-store cf-vars.yml -v system_domain={{system_domain}} \<\< EOF > deploy_cf.sh
+    - echo bosh -e my-bosh -d cf deploy cf-deployment-{{ cf_release_version }}.yml --vars-store cf-vars.yml -v system_domain={{system_domain}} \<\< EOF > deploy_cf.sh
     - echo yes >> deploy_cf.sh
     - echo EOF >> deploy_cf.sh
     - chmod +x deploy_cf.sh
