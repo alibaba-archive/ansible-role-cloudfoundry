@@ -8,9 +8,9 @@ Prepare
 2. Install terraform
    * Download terraform and terraform-provider-alicloud and unarchive them
 
-         $ wget https://releases.hashicorp.com/terraform/0.10.0/terraform_0.10.0_linux_amd64.zip
+         $ wget https://releases.hashicorp.com/terraform/0.11.1/terraform_0.11.1_linux_amd64.zip
          $ unzip terraform_0.10.0_linux_amd64.zip
-         $ wget -qO- https://github.com/alibaba/terraform-provider/releases/download/V1.2.6/terraform-provider-alicloud_darwin-amd64.tgz | tar -xzvf -
+         $ wget -qO- https://github.com/alibaba/terraform-provider/releases/download/V1.5.0/terraform-provider-alicloud_darwin-amd64.tgz | tar -xzvf -
 
    * Build a work directory, such as /root/work/terraform
 
@@ -39,7 +39,3 @@ Execute the following command with Alicloud Access Key, Region ID and Domain Nam
 
     1. You must specify a system domain by 'system_domain' to access to application. System domain is a public subdomian, like `aliyun.com`
     2. If you want to delete Alicloud resources, you can set parameter `delete` to `true` in above command.
-
-
-
-"Finding deployments:", "  Director responded with non-successful status code '401' response 'Not authorized: '/deployments'", "'", "Exit code 1"]
