@@ -1,11 +1,23 @@
 
 ---
 
+- name: register region
+  command: echo {{alicloud_region}}
+  register: region
+
+- name: download bosh cli from oss
+  get_url:
+    url: 'http://bosh.oss-cn-hangzhou.aliyuncs.com/cli/bosh-cli-2.0.45-linux-amd64'
+    dest: /usr/local/bin/bosh
+    mode: 0755
+  when: "'cn-' in region.stdout"
+
 - name: download bosh cli
   get_url:
     url: 'https://s3.amazonaws.com/bosh-cli-artifacts/bosh-cli-2.0.45-linux-amd64'
     dest: /usr/local/bin/bosh
     mode: 0755
+  when: "'cn-' not in region.stdout"
 
 - name: execute bosh
   command: bosh -v

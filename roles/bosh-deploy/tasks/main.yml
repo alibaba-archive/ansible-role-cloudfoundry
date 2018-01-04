@@ -1,4 +1,7 @@
 ---
+- name: register region
+  command: echo {{alicloud_region}}
+  register: region
 
 - name: create downloads
   file: path="{{ download_dir }}" state=directory
@@ -12,15 +15,42 @@
     dest: '{{ bosh_deploy_dir }}/bosh-deployment'
     version: alicloud
 
+- name: cp private key
+  copy:
+    src: '{{ private_key }}'
+    dest: '{{ bosh_deploy_dir }}/bosh-deployment'
+
+- name: set bosh environment
+  shell: '{{ item }}'
+  args:
+    executable: /bin/bash
+  with_items:
+    - export BOSH_DIRECTOR_IP={{ internal_ip }}
+    - echo export BOSH_DIRECTOR_IP={{ internal_ip }} >> /etc/profile
+    - echo export BOSH_LOG_LEVEL=info >> /etc/profile
+    - echo export BOSH_LOG_PATH=$(pwd)/bosh.log >> /etc/profile
+    - source /etc/profile
+
+- name: deploy bosh in China
+  shell: bosh create-env bosh-deployment/bosh.yml --state=state.json --vars-store=creds.yml -o bosh-deployment/alicloud/cpi.yml -o bosh-deployment/alicloud/releases-in-china.yml -o bosh-deployment/jumpbox-user.yml -o bosh-deployment/misc/powerdns.yml -v dns_recursor_ip={{dns_recursor_ip}} -v download_dir={{download_dir}} -v director_name={{director_name}} -v internal_cidr={{internal_cidr}} -v internal_gw={{internal_gw}} -v internal_ip={{internal_ip}} -v vswitch_id={{vswitch_id}} -v security_group_id={{security_group_id_1}} -v access_key_id={{alicloud_access_key}} -v access_key_secret={{alicloud_secret_key}} -v region={{alicloud_region}}  -v zone={{bosh_zone}} -v key_pair_name={{key_pair_name}} -v private_key={{private_key}}
+  args:
+    chdir: '{{ bosh_deploy_dir }}'
+    executable: /bin/bash
+  when: "'cn-' in region.stdout"
+
+- name: deploy bosh in oversea
+  shell: bosh create-env bosh-deployment/bosh.yml --state=state.json --vars-store=creds.yml -o bosh-deployment/alicloud/cpi.yml -o bosh-deployment/jumpbox-user.yml -o bosh-deployment/misc/powerdns.yml -v dns_recursor_ip={{dns_recursor_ip}} -v download_dir={{download_dir}} -v director_name={{director_name}} -v internal_cidr={{internal_cidr}} -v internal_gw={{internal_gw}} -v internal_ip={{internal_ip}} -v vswitch_id={{vswitch_id}} -v security_group_id={{security_group_id_1}} -v access_key_id={{alicloud_access_key}} -v access_key_secret={{alicloud_secret_key}} -v region={{alicloud_region}}  -v zone={{bosh_zone}} -v key_pair_name={{key_pair_name}} -v private_key={{private_key}}
+  args:
+    chdir: '{{ bosh_deploy_dir }}'
+    executable: /bin/bash
+  when: "'cn-' not in region.stdout"
+
 - name: deploy bosh
   shell: '{{ item }}'
   args:
     chdir: '{{ bosh_deploy_dir }}'
+    executable: /bin/bash
   with_items:
-    - export BOSH_DIRECTOR_IP={{ internal_ip }}
-    - echo export BOSH_DIRECTOR_IP={{ internal_ip }} >> /etc/profile
-    - . /etc/profile
-    - bosh create-env bosh-deployment/bosh.yml --state=state.json --vars-store=creds.yml -o bosh-deployment/alicloud/cpi.yml -o bosh-deployment/jumpbox-user.yml -o bosh-deployment/misc/powerdns.yml -v dns_recursor_ip={{dns_recursor_ip}} -v download_dir={{download_dir}} -v director_name={{director_name}} -v internal_cidr={{internal_cidr}} -v internal_gw={{internal_gw}} -v internal_ip={{internal_ip}} -v vswitch_id={{vswitch_id}} -v security_group_id={{security_group_id}} -v access_key_id={{alicloud_access_key}} -v access_key_secret={{alicloud_secret_key}} -v region={{alicloud_region}} -v access_endpoint={{alicloud_region}}.aliyuncs.com -v zone={{bosh_zone}}
     - bosh int ./creds.yml --path /director_ssl/ca > ca-cert
     - bosh alias-env my-bosh -e {{ internal_ip }} --ca-cert ca-cert
     - bosh int ./creds.yml --path /admin_password > password
@@ -33,19 +63,22 @@
     chdir: '{{ bosh_deploy_dir }}'
   register: secret_key
 
+- name: set bosh environment
+  shell: '{{ item }}'
+  args:
+    executable: /bin/bash
+  with_items:
+    - echo export BOSH_CA_CERT=$(pwd)/ca-cert >> /etc/profile
+    - echo export BOSH_CLIENT=admin >> /etc/profile
+    - echo export BOSH_CLIENT_SECRET={{ secret_key.stdout }} >> /etc/profile
+    - echo export CF_DOMAIN={{system_domain}} >> /etc/profile
+    - source /etc/profile
 
 - name: set secret key and login
   shell: '{{ item }}'
   args:
     chdir: '{{ bosh_deploy_dir }}'
   with_items:
-      - echo export BOSH_LOG_LEVEL=info >> /etc/profile
-      - echo export BOSH_LOG_PATH=$(pwd)/bosh.log >> /etc/profile
-      - echo export BOSH_ENVIRONMENT={{internal_ip}}
-      - echo export BOSH_CA_CERT=$(pwd)/ca-cert >> /etc/profile
-      - echo export BOSH_CLIENT=admin >> /etc/profile
-      - echo export BOSH_CLIENT_SECRET={{ secret_key.stdout }} >> /etc/profile
-      - . /etc/profile
       - echo bosh -e {{director_name}} l \<\< EOF > bosh_login.sh
       - echo admin >> bosh_login.sh
       - echo {{ secret_key.stdout }} >> bosh_login.sh

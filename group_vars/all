@@ -1,22 +1,14 @@
 director_name: my-bosh
 
-bosh_version: 263.2.0
-
-cf_release_version: 278
+cf_release_version: 279
 
 delete: false
 download_dir: /root/downloads
-bosh_deploy_dir: /root/bosh-deploy-{{bosh_version}}
+bosh_deploy_dir: /root/bosh-deploy
 cf_deploy_dir: /root/cf-release-{{cf_release_version}}
 dns_recursor_ip: 8.8.8.8
 
-dependence_package_dir: ./dependence
+releases_dir: /root/releases
 
-stemcell_version: 1010
-stemcell_sha1: 00d20db2c7cb63d8e75f4c021d5014db57ee26fe
-
-application_package: helloworld.tgz
-application_url: '{{ dependence_package_dir }}/{{ application_package }}'
-application_name: helloworld
-organization_name: default_organization
+stemcell_version: 1016
 

@@ -1,66 +1,91 @@
 ---
 
+- name: register region
+  command: echo {{alicloud_region}}
+  register: region
+
+- name: download cf cli and unarchive from oss
+  unarchive:
+    src: 'http://cloudfoundry-cn-hangzhou.oss-cn-hangzhou.aliyuncs.com/cloudfoundry/cli/cf-cli_6.33.0_linux_x86-64.tgz'
+    dest: '/usr/local/bin/'
+    remote_src: yes
+  when: "'cn-' in region.stdout"
+
+- name: download cf cli and unarchive from pivitol
+  unarchive:
+    src: 'https://cli.run.pivotal.io/stable?release=linux64-binary&source=github'
+    dest: '/usr/local/bin/'
+    remote_src: yes
+  when: "'cn-' not in region.stdout"
+
+- name: write completion of cf
+  get_url:
+    url: 'https://raw.githubusercontent.com/cloudfoundry/cli/master/ci/installers/completion/cf'
+    dest: /usr/share/bash-completion/completions/
+  become-method: sudo
+
 - name: make dir
   file: path="{{ cf_deploy_dir }}" state=directory
 
-- name: copy cloud-config
+- name: copy releases for China
   copy:
-    src: cloud-config.yml
+    src: releases
     dest: '{{ cf_deploy_dir }}'
-
-- name: copy convert
-  copy:
-    src: convert.sh
-    dest: '{{ cf_deploy_dir }}'
-    mode: 0777
-
-- name: update config
-  shell: '{{ item }}'
-  args:
-    chdir: '{{ cf_deploy_dir }}'
-  with_items:
-    - echo bosh -e my-bosh update-cloud-config ./cloud-config.yml -v zone-1={{zone_1}} -v zone-2={{zone_2}} -v zone-3={{zone_3}} -v subnet-1-id={{vswitch_id_1}} -v subnet-2-id={{vswitch_id_2}} -v subnet-3-id={{vswitch_id_3}} -v subnet-1-range={{vswitch_range_1}}  -v subnet-2-range={{vswitch_range_2}} -v subnet-3-range={{vswitch_range_3}} -v subnet-1-gateway={{vswitch_gateway_1}} -v subnet-2-gateway={{vswitch_gateway_2}} -v subnet-3-gateway={{vswitch_gateway_3}} -v security-group-id={{security_group_id}} -v tcp-slb-id={{tcp_slb_id}} -v http-slb-id={{http_slb_id}} \<\< EOF > update_config.sh
-    - echo y >> update_config.sh
-    - echo EOF >> update_config.sh
-    - chmod +x update_config.sh
-    - ./update_config.sh
-  args:
-    chdir: '{{ cf_deploy_dir }}'
+  when: "'cn-' in region.stdout"
 
 - name: git clone cf deployment
   git:
     repo: 'https://github.com/aliyun/cf-deployment.git'
     dest: '{{ cf_deploy_dir }}/cf-deployment'
 
-- name: deploy cf
+- name: update config
+  shell: '{{ item }}'
+  args:
+    chdir: '{{ cf_deploy_dir }}'
+  with_items:
+    - echo bosh -e {{director_name}} update-cloud-config ./cf-deployment/iaas-support/alicloud/cloud-config.yml -v az1_zone={{az1_zone}} -v az2_zone={{az2_zone}} -v az3_zone={{az3_zone}} -v az1_vswitch_id={{az1_vswitch_id}} -v az2_vswitch_id={{az2_vswitch_id}} -v az3_vswitch_id={{az3_vswitch_id}} -v az1_vswitch_range={{az1_vswitch_range}}  -v az2_vswitch_range={{az2_vswitch_range}} -v az3_vswitch_range={{az3_vswitch_range}} -v az1_vswitch_gateway={{az1_vswitch_gateway}} -v az2_vswitch_gateway={{az2_vswitch_gateway}} -v az3_vswitch_gateway={{az3_vswitch_gateway}} -v security_group_id_1={{security_group_id_1}} -v security_group_id_2={{security_group_id_2}} -v security_group_id_3={{security_group_id_3}} -v tcp_slb_id_array=[{{tcp_slb_id_array}}] -v http_slb_id_array=[{{http_slb_id_array}}] \<\< EOF > update_config.sh
+    - echo y >> update_config.sh
+    - echo EOF >> update_config.sh
+    - chmod +x update_config.sh
+    - ./update_config.sh
+    - echo export CF_DOMAIN={{system_domain}} >> /etc/profile
+    - . /etc/profile
+
+- name: uploade releases and stemcells, write cf manifest in china
+  shell: '{{ item }}'
+  args:
+    chdir: '{{cf_deploy_dir}}'
+  when: "'cn-' in region.stdout"
+  with_items:
+    - bosh -e {{director_name}} upload-stemcell http://bosh.oss-cn-hangzhou.aliyuncs.com/light-bosh-stemcell-{{stemcell_version}}-alicloud-kvm-ubuntu-trusty-go_agent.tgz
+    - cf-deployment/iaas-support/alicloud/upload-releases.sh ./releases {{director_name}}
+    - echo bosh -e {{director_name}} -d cf deploy releases/cf-deployment-local.yml --vars-store cf-vars.yml -o cf-deployment/iaas-support/alicloud/stemcells.yml -v region={{alicloud_region}} -v system_domain={{system_domain}} \<\< EOF > deploy_cf.sh
+
+- name: uploade releases and stemcells, write cf manifest in oversea
+  shell: '{{ item }}'
+  args:
+    chdir: '{{cf_deploy_dir}}'
+  when: "'cn-' not in region.stdout"
+  with_items:
+    - bosh -e {{director_name}} upload-stemcell http://bosh-{{alicloud_region}}.oss-{{alicloud_region}}.aliyuncs.com/light-bosh-stemcell-{{stemcell_version}}-alicloud-kvm-ubuntu-trusty-go_agent.tgz
+    - bosh -e {{director_name}} upload-release https://bosh.io/d/github.com/cloudfoundry/cf-release?v={{cf_release_version}}
+    - echo bosh -e {{director_name}} -d cf deploy cf-deployment/cf-deployment.yml --vars-store cf-vars.yml -o cf-deployment/iaas-support/alicloud/stemcells.yml -v region={{alicloud_region}} -v system_domain={{system_domain}} \<\< EOF > deploy_cf.sh
+
+
+- name: write cf manifest
   shell: '{{ item }}'
   args:
     chdir: '{{cf_deploy_dir}}'
   with_items:
-    - bosh -e my-bosh vms
-    - bosh -e my-bosh upload-stemcell http://bosh-alicloud.oss-cn-hangzhou.aliyuncs.com/light-bosh-stemcell-{{stemcell_version}}-alicloud-kvm-ubuntu-trusty-go_agent.tgz
-    - bosh -e my-bosh upload-release https://bosh.io/d/github.com/cloudfoundry/cf-release?v={{ cf_release_version }}
-    - export CF_DOMAIN={{system_domain}}
-    - echo export CF_DOMAIN={{system_domain}} >> /etc/profile
-    - . /etc/profile
-    - ./convert.sh {{cf_release_version}} {{stemcell_version}} cf-deployment/cf-deployment.yml
-    - echo bosh -e my-bosh -d cf deploy cf-deployment-{{cf_release_version}}.yml --vars-store cf-vars.yml -v system_domain={{system_domain}} \<\< EOF > deploy_cf.sh
     - echo yes >> deploy_cf.sh
     - echo EOF >> deploy_cf.sh
-    - chmod +x deploy_cf.sh
-    - ./deploy_cf.sh
 
+- name: mode 755
+  file:
+    path: '{{cf_deploy_dir}}/deploy_cf.sh'
+    mode: 0755
 
-- name: download cf cli and unarchive
-  unarchive:
-    src: 'https://cli.run.pivotal.io/stable?release=linux64-binary&source=github'
-    dest: '{{ download_dir }}'
-    remote_src: yes
-
-- name: install cf cli
-  shell: '{{ item }}'
+- name: deploy cf
+  shell: './deploy_cf.sh'
   args:
-    chdir: '{{ download_dir }}'
-  with_items:
-    - mv cf /usr/local/bin
-    - sudo curl -o /usr/share/bash-completion/completions/cf https://raw.githubusercontent.com/cloudfoundry/cli/master/ci/installers/completion/cf
+    chdir: '{{cf_deploy_dir}}'
