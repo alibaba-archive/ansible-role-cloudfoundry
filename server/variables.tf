@@ -14,7 +14,7 @@ variable "vswitch_cidr_bosh" {
   default = "172.16.0.0/24"
 }
 variable "bosh_gateway" {
-  default = "172.16.0.253"
+  default = "172.16.0.1"
 }
 
 variable "vswitch_cidr_cf" {
@@ -24,7 +24,7 @@ variable "vswitch_cidr_cf" {
 
 variable "cf_gateway" {
   type = "list"
-  default = ["172.16.10.253", "172.16.11.253", "172.16.12.253"]
+  default = ["172.16.10.1", "172.16.11.1", "172.16.12.1"]
 }
 
 variable "router_private_ip" {
@@ -51,11 +51,14 @@ variable "disk_category"{
   default = "cloud_efficiency"
 }
 variable "ecs_password"{
-  default = "Cloud12345"
+  default = "Test12345"
 }
 variable "prefix"{
-  default = "_v10_1010"
+  default = "_v10_1016"
 }
 variable "domain_name" {
   description = "The domain name used to access to your application, like aliyun.com"
+}
+variable "key_pair_name" {
+  default = "private-key-for-bosh"
 }

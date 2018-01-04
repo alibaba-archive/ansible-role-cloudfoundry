@@ -1,50 +1,52 @@
 ---
 
-- name: unarchive app
-  unarchive:
-    src: '{{ application_url }}'
-    dest: '{{ download_dir }}'
-
-- name: install pip
-  pip:
-    name: pexpect
-
-
-- name: deploy bosh
+- name: create password
   shell: bosh int ./cf-vars.yml --path /cf_admin_password > password
   args:
     chdir: '{{ cf_deploy_dir }}'
 
-- name: get password
+- name: register password
   command: awk 'NR==1{print}' password
   args:
     chdir: '{{ cf_deploy_dir }}'
   register: secret_key
 
-- name: login cf cli
+- name: login cf
   command: cf login -a http://api.{{system_domain}} --skip-ssl-validation -u admin -p {{secret_key.stdout}}
   args:
       chdir: '{{ cf_deploy_dir }}'
 
-#    command: cf login -a http://api.{{ system_domain }} -u {{ cf_user_email }} --skip-ssl-validation
-#    command: cf login -a http://api.$CF_DOMAIN --skip-ssl-validation -u admin -p `bosh int ./cf-vars.yml --path /cf_admin_password`
-#    responses:
-#      '(?i)API endpoint' : '{{ cf_user_password }}'
+- name: register region
+  command: echo {{alicloud_region}}
+  register: region
 
-#- name: login cf cli
-#  expect:
-##    command: cf login -a http://api.{{ system_domain }} -u {{ cf_user_email }} --skip-ssl-validation
-#    command: cf login -a http://api.$CF_DOMAIN --skip-ssl-validation -u admin -p `bosh int ./cf-vars.yml --path /cf_admin_password`
-#    responses:
-#      '(?i)API endpoint' : '{{ cf_user_password }}'
+- name: update buildpacks
+  shell: '{{ item }}'
+  when: "'cn-' in region.stdout"
+  with_items:
+    - cf update-buildpack staticfile_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/staticfile_buildpack-cached-v1.4.18.zip -i 1
+    - cf update-buildpack java_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/java-buildpack-offline-dad1000.zip -i 2
+    - cf update-buildpack ruby_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/ruby_buildpack-cached-v1.7.5.zip -i 3
+    - cf update-buildpack dotnet_core_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/dotnet-core_buildpack-cached-v1.0.31.zip -i 4
+    - cf update-buildpack nodejs_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/nodejs_buildpack-cached-v1.6.11.zip -i 5
+    - cf update-buildpack go_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/go_buildpack-cached-v1.8.13.zip -i 6
+    - cf update-buildpack python_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/python_buildpack-cached-v1.6.2.zip -i 7
+    - cf update-buildpack php_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/php_buildpack-cached-v4.3.46.zip -i 8
+    - cf update-buildpack binary_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/binary_buildpack-cached-v1.0.15.zip -i 9
+
+- name: download application and unarchive
+  unarchive:
+    src: 'https://wordpress.org/latest.zip'
+    dest: '{{ download_dir }}'
+    remote_src: yes
 
 - name: install app
   shell: '{{ item }}'
   args:
-    chdir: '{{ download_dir }}/{{ application_name }}'
+    chdir: '{{ download_dir }}/wordpress'
   with_items:
     - cf orgs
-    - cf create-space {{ application_name }} -o {{ organization_name }}
-    - cf target -o "{{ organization_name }}" -s "{{ application_name }}"
+    - cf create-space wordpress -o system
+    - cf target -o "system" -s "wordpress"
     - cf spaces
-    - cf push {{ application_name }} -b staticfile_buildpack
+    - cf push wordpress -b php_buildpack

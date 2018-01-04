@@ -1,25 +1,43 @@
 ---
 
+
 - name: create ecs instance and build network environment
   hosts: localhost
   tasks:
-    - shell: terraform init
-      args:
-        chdir: ./server
+    - name: register region
+      command: echo {{alicloud_region}}
+      register: region
 
-    - expect:
-        command: terraform destroy -var 'alicloud_access_key={{ alicloud_access_key }}' -var 'alicloud_secret_key={{ alicloud_secret_key }}' -var 'alicloud_region={{ alicloud_region }}' -var 'domain_name={{ system_domain }}'
-        responses:
-          'Enter a value:' : 'yes'
+    - name: download releases shell script
+      get_url:
+        url: 'https://raw.githubusercontent.com/aliyun/cf-deployment/master/iaas-support/alicloud/download-releases.sh'
+        dest: ./
+        force: yes
+        mode: 0755
+      when: "'cn-' in region.stdout"
+
+    - name: download cf-deployment
+      get_url:
+        url: 'https://raw.githubusercontent.com/cloudfoundry/cf-deployment/master/cf-deployment.yml'
+        dest: ./
+        force: yes
+      when: "'cn-' in region.stdout"
+
+    - name: download releases and create new cf-deployment
+      shell: ./download-releases.sh cf-deployment.yml roles/cf-deploy/files/releases
+      when: "'cn-' in region.stdout"
+
+    - shell: terraform init && terraform destroy -force -var 'alicloud_access_key={{ alicloud_access_key }}' -var 'alicloud_secret_key={{ alicloud_secret_key }}' -var 'alicloud_region={{ alicloud_region }}' -var 'domain_name={{ system_domain }}'
+      args:
         chdir: ./server
       when: delete
 
-    - shell: terraform apply -var 'alicloud_access_key={{ alicloud_access_key }}' -var 'alicloud_secret_key={{ alicloud_secret_key }}' -var 'alicloud_region={{ alicloud_region }}' -var 'domain_name={{ system_domain }}'
+    - shell: terraform init && terraform apply --auto-approve -var 'alicloud_access_key={{ alicloud_access_key }}' -var 'alicloud_secret_key={{ alicloud_secret_key }}' -var 'alicloud_region={{ alicloud_region }}' -var 'domain_name={{ system_domain }}'
       args:
         chdir: ./server
       when: not delete
 
-- name: deploy cf
+- name: start deploying
   hosts: CloudFoundaryServer
   remote_user: root
   roles:
