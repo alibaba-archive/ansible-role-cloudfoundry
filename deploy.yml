@@ -16,12 +16,8 @@
         mode: 0755
       when: "'cn-' in region.stdout"
 
-    - name: download cf-deployment
-      get_url:
-        url: 'https://raw.githubusercontent.com/cloudfoundry/cf-deployment/master/cf-deployment.yml'
-        dest: ./
-        force: yes
-      when: "'cn-' in region.stdout"
+    - name: create directory for cf releases
+      file: path="./roles/cf-deploy/files" state=directory
 
     - name: download releases and create new cf-deployment
       shell: ./download-releases.sh cf-deployment.yml roles/cf-deploy/files/releases
