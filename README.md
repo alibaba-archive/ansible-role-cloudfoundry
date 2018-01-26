@@ -8,9 +8,8 @@ Prepare
 2. Install terraform
    * Download terraform and terraform-provider-alicloud and unarchive them
 
-         $ wget https://releases.hashicorp.com/terraform/0.11.1/terraform_0.11.1_linux_amd64.zip
+         $ wget https://releases.hashicorp.com/terraform/0.11.2/terraform_0.11.2_linux_amd64.zip
          $ unzip terraform_0.10.0_linux_amd64.zip
-         $ wget -qO- https://github.com/alibaba/terraform-provider/releases/download/V1.5.0/terraform-provider-alicloud_darwin-amd64.tgz | tar -xzvf -
 
    * Build a work directory, such as /root/work/terraform
 
