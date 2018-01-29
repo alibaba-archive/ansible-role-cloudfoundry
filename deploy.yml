@@ -26,6 +26,9 @@
     - name: create directory for cf releases
       file: path="./roles/cf-deploy/files" state=directory
 
+    - name: create directory for bosh
+      file: path="./roles/bosh-deploy/files" state=directory
+
     - name: download releases and create new cf-deployment
       shell: ./download-releases.sh cf-deployment.yml roles/cf-deploy/files/releases
       when: "'cn-' in region.stdout"
