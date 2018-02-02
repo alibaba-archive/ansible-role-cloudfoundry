@@ -42,35 +42,23 @@ resource "alicloud_vswitch" "cf" {
 
 resource "alicloud_nat_gateway" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
-  spec = "Small"
   name = "for_bosh${var.prefix}"
-  bandwidth_packages = [{
-    ip_count = 1
-    bandwidth = 2
-    zone = "${data.alicloud_zones.default.zones.0.id}"
-  }]
-  depends_on = ["alicloud_vswitch.bosh"]
 }
+
+resource "alicloud_eip" "default" {
+  bandwidth = 10
+}
+
+resource "alicloud_eip_association" "default" {
+  allocation_id = "${alicloud_eip.default.id}"
+  instance_id = "${alicloud_nat_gateway.default.id}"
+}
+
 resource "alicloud_snat_entry" "bosh"{
   snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
   source_vswitch_id = "${alicloud_vswitch.bosh.id}"
-  snat_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),0)}"
+  snat_ip = "${alicloud_eip.default.ip_address}"
 }
-//resource "alicloud_snat_entry" "cf"{
-//  count = "${length(var.vswitch_cidr_cf)}"
-//  snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
-//  source_vswitch_id = "${element(alicloud_vswitch.cf.*.id, count.index)}"
-//  snat_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),0)}"
-//}
-
-//resource "alicloud_forward_entry" "ssh"{
-//  forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-//  external_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}"
-//  external_port = "22"
-//  ip_protocol = "tcp"
-//  internal_ip = "${alicloud_instance.default.private_ip}"
-//  internal_port = "22"
-//}
 
 resource "alicloud_security_group" "sg" {
   count = 3
