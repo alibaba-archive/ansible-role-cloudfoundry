@@ -36,22 +36,12 @@
     - shell: terraform init && terraform destroy -force -var 'alicloud_access_key={{ alicloud_access_key }}' -var 'alicloud_secret_key={{ alicloud_secret_key }}' -var 'alicloud_region={{ alicloud_region }}' -var 'domain_name={{ system_domain }}'
       args:
         chdir: ./server
-      when: delete and not international
+      when: delete
 
     - shell: terraform init && terraform apply --auto-approve -var 'alicloud_access_key={{ alicloud_access_key }}' -var 'alicloud_secret_key={{ alicloud_secret_key }}' -var 'alicloud_region={{ alicloud_region }}' -var 'domain_name={{ system_domain }}'
       args:
         chdir: ./server
-      when: not delete and not international
-
-    - shell: terraform init && terraform destroy -force -var 'alicloud_access_key={{ alicloud_access_key }}' -var 'alicloud_secret_key={{ alicloud_secret_key }}' -var 'alicloud_region={{ alicloud_region }}' -var 'domain_name={{ system_domain }}'
-      args:
-        chdir: ./server-international
-      when: delete and international
-
-    - shell: terraform init && terraform apply --auto-approve -var 'alicloud_access_key={{ alicloud_access_key }}' -var 'alicloud_secret_key={{ alicloud_secret_key }}' -var 'alicloud_region={{ alicloud_region }}' -var 'domain_name={{ system_domain }}'
-      args:
-        chdir: ./server-international
-      when: not delete and international
+      when: not delete
 
 - name: start deploying
   hosts: CloudFoundaryServer

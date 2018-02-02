@@ -3,7 +3,6 @@ director_name: my-bosh
 cf_release_version: 279
 
 delete: false
-international: false
 download_dir: /root/downloads
 bosh_deploy_dir: /root/bosh-deploy
 cf_deploy_dir: /root/cf-release-{{cf_release_version}}
