@@ -37,7 +37,7 @@ resource "alicloud_vswitch" "cf" {
   name = "vswitch_for_cf${var.prefix}-${count.index}"
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "${element(var.vswitch_cidr_cf, count.index)}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${lookup(data.alicloud_zones.default.zones[count.index%length(data.alicloud_zones.default.zones)], "id")}"
 }
 
 resource "alicloud_nat_gateway" "default" {
