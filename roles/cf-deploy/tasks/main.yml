@@ -9,14 +9,14 @@
     src: 'http://cloudfoundry-cn-hangzhou.oss-cn-hangzhou.aliyuncs.com/cloudfoundry/cli/cf-cli_6.33.0_linux_x86-64.tgz'
     dest: '/usr/local/bin/'
     remote_src: yes
-  when: "'cn-' in region.stdout"
+  when: "'cn-' in region.stdout and 'cn-hongkong' not in region.stdout"
 
 - name: download cf cli and unarchive from pivitol
   unarchive:
     src: 'https://cli.run.pivotal.io/stable?release=linux64-binary&source=github'
     dest: '/usr/local/bin/'
     remote_src: yes
-  when: "'cn-' not in region.stdout"
+  when: "'cn-hongkong' in region.stdout or 'cn-' not in region.stdout"
 
 - name: write completion of cf
   get_url:
@@ -31,7 +31,7 @@
   copy:
     src: releases
     dest: '{{ cf_deploy_dir }}'
-  when: "'cn-' in region.stdout"
+  when: "'cn-' in region.stdout and 'cn-hongkong' not in region.stdout"
 
 - name: git clone cf deployment
   git:
@@ -55,7 +55,7 @@
   shell: '{{ item }}'
   args:
     chdir: '{{cf_deploy_dir}}'
-  when: "'cn-' in region.stdout"
+  when: "'cn-' in region.stdout and 'cn-hongkong' not in region.stdout"
   with_items:
     - bosh -e {{director_name}} upload-stemcell http://bosh.oss-cn-hangzhou.aliyuncs.com/light-bosh-stemcell-{{stemcell_version}}-alicloud-kvm-ubuntu-trusty-go_agent.tgz
     - cf-deployment/iaas-support/alicloud/upload-releases.sh ./releases {{director_name}}
@@ -65,7 +65,7 @@
   shell: '{{ item }}'
   args:
     chdir: '{{cf_deploy_dir}}'
-  when: "'cn-' not in region.stdout"
+  when: "'cn-hongkong' in region.stdout or 'cn-' not in region.stdout"
   with_items:
     - bosh -e {{director_name}} upload-stemcell http://bosh-{{alicloud_region}}.oss-{{alicloud_region}}.aliyuncs.com/light-bosh-stemcell-{{stemcell_version}}-alicloud-kvm-ubuntu-trusty-go_agent.tgz
     - bosh -e {{director_name}} upload-release https://bosh.io/d/github.com/cloudfoundry/cf-release?v={{cf_release_version}}

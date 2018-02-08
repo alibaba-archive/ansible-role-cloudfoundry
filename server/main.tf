@@ -180,7 +180,7 @@ resource "alicloud_instance" "default" {
         echo vswitch_id: ${alicloud_vswitch.bosh.id} >> ../group_vars/all
         echo bosh_zone: ${alicloud_vswitch.bosh.availability_zone} >> ../group_vars/all
         echo http_slb_ip: ${alicloud_slb.http.address} >> ../group_vars/all
-        echo key_pair_name: ${var.key_pair_name} >> ../group_vars/all
+        echo key_pair_name: ${alicloud_key_pair.key_pair.key_name} >> ../group_vars/all
         echo private_key: ${var.key_pair_name}.pem >> ../group_vars/all
         echo "########deployment cf variables########" >> ../group_vars/all
         echo az1_zone: ${alicloud_vswitch.cf.0.availability_zone} >> ../group_vars/all

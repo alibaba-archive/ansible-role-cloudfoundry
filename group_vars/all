@@ -10,5 +10,5 @@ dns_recursor_ip: 8.8.8.8
 
 releases_dir: /root/releases
 
-stemcell_version: 1016
+stemcell_version: 1017
 

@@ -22,7 +22,7 @@
 
 - name: update buildpacks
   shell: '{{ item }}'
-  when: "'cn-' in region.stdout"
+  when: "'cn-' in region.stdout and 'cn-hongkong' not in region.stdout"
   with_items:
     - cf update-buildpack staticfile_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/staticfile_buildpack-cached-v1.4.18.zip -i 1
     - cf update-buildpack java_buildpack -p http://cf-buildpacks.oss-cn-hangzhou.aliyuncs.com/java-buildpack-offline-dad1000.zip -i 2
